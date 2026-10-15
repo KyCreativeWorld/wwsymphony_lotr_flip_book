@@ -1,61 +1,55 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
+import { FlipBook, type BookPage } from '@/components/flip-book';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Spacing } from '@/constants/theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+const PAGES: BookPage[] = [
+  {
+    title: 'The Shire',
+    body: 'In a hole in the ground there lived a hobbit. Green hills, round doors, and second breakfasts. A quiet place where adventures were not usually welcome.',
+  },
+  {
+    title: 'Rivendell',
+    body: 'The Last Homely House east of the Sea. Here the Fellowship was formed, nine walkers set against the nine riders, and the long road south began.',
+  },
+  {
+    title: 'Mordor',
+    body: 'Where the shadows lie. Across the ash plains of Gorgoroth, Mount Doom burns, and only there can the One Ring be unmade.',
+  },
+];
+
+// Width the covers add around the pages (both sides) and their extra height.
+const CoverExtraWidth = 28;
+const CoverExtraHeight = 24;
 
 export default function HomeScreen() {
+  // Measured on the client: the web build is pre-rendered without knowing the window size.
+  const [area, setArea] = useState<{ width: number; height: number } | null>(null);
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setArea({ width, height });
+  };
+
+  const pageWidth =
+    area &&
+    Math.max(
+      120,
+      Math.min(
+        (area.width - CoverExtraWidth) / 2,
+        (area.height - CoverExtraHeight) / 1.4,
+        380,
+      ),
+    );
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+        <View style={styles.bookArea} onLayout={onLayout}>
+          {pageWidth !== null && <FlipBook pages={PAGES} pageWidth={pageWidth} />}
+        </View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -64,35 +58,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    paddingBottom: BottomTabInset,
     paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
+  bookArea: {
+    flex: 1,
     alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: Spacing.five,
   },
 });
