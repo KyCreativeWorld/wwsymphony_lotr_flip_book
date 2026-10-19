@@ -276,10 +276,12 @@ export function BackCover() {
 }
 
 // The inside of a cover: leather turned in around the edges, with a paper endpaper glued over it.
-export function InsideCover({ spine }: { spine: Side }) {
+// Anything passed as children (like a map) is laid over the endpaper.
+export function InsideCover({ spine, children }: { spine: Side; children?: ReactNode }) {
   return (
     <View style={[styles.inside, spine === 'left' ? styles.insideSpineLeft : styles.insideSpineRight]}>
       <View style={styles.endpaper} />
+      {children}
     </View>
   );
 }
