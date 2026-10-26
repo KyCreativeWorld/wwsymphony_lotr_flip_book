@@ -17,6 +17,9 @@ export type MapMarker = {
   y: number;
 };
 
+// Extra clickable room around each pin, in pixels.
+const MARKER_SLACK = 4;
+
 export type PlacedMarker = {
   marker: MapMarker;
   // Which content page the marker leads to.
@@ -72,10 +75,15 @@ export function MapHalf({
         const x = offsetX + marker.x * mapWidth - halfStart;
         const y = offsetY + marker.y * mapHeight;
         if (x < 0 || x >= pageWidth) return null;
+        // Labels sit under the pin, unless that would run past the page edge or into the spine.
+        const labelWidth = pinSize * 6;
+        const labelSide =
+          x + labelWidth / 2 > pageWidth ? 'left' : x - labelWidth / 2 < 0 ? 'right' : 'below';
         return (
           <MarkerPin
             key={pageIndex}
             label={marker.label}
+            labelSide={labelSide}
             x={x}
             y={y}
             size={pinSize}
@@ -90,6 +98,7 @@ export function MapHalf({
 
 type MarkerPinProps = {
   label: string;
+  labelSide: 'below' | 'left' | 'right';
   x: number;
   y: number;
   size: number;
@@ -97,29 +106,44 @@ type MarkerPinProps = {
   onPress: () => void;
 };
 
-function MarkerPin({ label, x, y, size, disabled, onPress }: MarkerPinProps) {
+function MarkerPin({ label, labelSide, x, y, size, disabled, onPress }: MarkerPinProps) {
   const [hovered, setHovered] = useState(false);
   const labelWidth = size * 6;
+  // The clickable area is just the pin plus a little slack, so neighbouring markers' areas
+  // don't overlap. The label floats beside it and isn't clickable.
+  const hit = size + MARKER_SLACK * 2;
+  const labelPlacement =
+    labelSide === 'below'
+      ? { left: x - labelWidth / 2, top: y + size / 2 + 3, alignItems: 'center' as const }
+      : labelSide === 'left'
+        ? { left: x - size / 2 - 4 - labelWidth, top: y - size * 0.45, alignItems: 'flex-end' as const }
+        : { left: x + size / 2 + 4, top: y - size * 0.45, alignItems: 'flex-start' as const };
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Go to ${label}`}
-      disabled={disabled}
-      onPress={onPress}
-      onHoverIn={() => setHovered(true)}
-      onHoverOut={() => setHovered(false)}
-      style={[
-        styles.marker,
-        // Centered on the spot horizontally, with the pin's middle on it vertically.
-        { left: x - labelWidth / 2, top: y - size / 2, width: labelWidth },
-        hovered && styles.markerHovered,
-      ]}>
-      <Pin size={size} />
-      <Text style={[styles.label, { fontSize: size * 0.55 }]} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Go to ${label}`}
+        disabled={disabled}
+        onPress={onPress}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        style={[
+          styles.marker,
+          { left: x - hit / 2, top: y - hit / 2, width: hit, height: hit },
+          hovered && styles.markerHovered,
+        ]}>
+        <Pin size={size} />
+      </Pressable>
+      {/* The map already names every place, so the label only appears while hovering. */}
+      {hovered && (
+        <View pointerEvents="none" style={[styles.labelSpot, labelPlacement, { width: labelWidth }]}>
+          <Text style={[styles.label, { fontSize: size * 0.55 }]} numberOfLines={1}>
+            {label}
+          </Text>
+        </View>
+      )}
+    </>
   );
 }
 
@@ -130,12 +154,21 @@ const styles = StyleSheet.create({
   marker: {
     position: 'absolute',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  labelSpot: {
+    position: 'absolute',
+    zIndex: 1,
   },
   markerHovered: {
     transform: [{ scale: 1.15 }],
   },
   inset: {
     overflow: 'hidden',
+    // The map is drawn on a transparent background, so give it paper to sit on.
+    backgroundColor: '#efe2c0',
+  },
+  insetFramed: {
     borderWidth: 4,
     borderColor: '#fbf6ea',
     boxShadow: '0 2px 6px rgba(59, 42, 26, 0.35)',
@@ -151,7 +184,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0d78c',
   },
   label: {
-    marginTop: 3,
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
@@ -183,10 +215,12 @@ type MapInsetProps = {
   height: number;
   // How many times closer than the full map fitted to this box's width.
   zoom: number;
+  // Leave off the inset's own white border, for when it sits inside another frame.
+  bare?: boolean;
 };
 
 // A zoomed-in piece of the map, centered on one marker.
-export function MapInset({ map, marker, width, height, zoom }: MapInsetProps) {
+export function MapInset({ map, marker, width, height, zoom, bare = false }: MapInsetProps) {
   const mapWidth = width * zoom;
   const mapHeight = mapWidth / map.aspectRatio;
   // Center on the marker, but don't slide past the map's edges.
@@ -195,7 +229,7 @@ export function MapInset({ map, marker, width, height, zoom }: MapInsetProps) {
   const pinSize = Math.max(16, width * 0.07);
 
   return (
-    <View style={[styles.inset, { width, height }]}>
+    <View style={[styles.inset, !bare && styles.insetFramed, { width, height }]}>
       <Image
         source={map.image}
         contentFit="fill"
