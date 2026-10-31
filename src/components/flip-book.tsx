@@ -13,7 +13,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { BackCover, FrontCover, InsideCover, LEATHER_DARK } from '@/components/book-cover';
+import { CharacterPage, Portrait } from '@/components/character-page';
 import { MapHalf, MapInset, type BookMap, type MapMarker, type PlacedMarker } from '@/components/book-map';
+import { type CharacterId } from '@/constants/characters';
 import { Fonts } from '@/constants/theme';
 
 const TURN_DURATION = 900;
@@ -52,12 +54,17 @@ const COVER_MARGIN_Y = 12;
 
 // One location, shown across a two-page spread.
 export type BookPage = {
-  // The Walla Walla name, and the Lord of the Rings place it stands in for.
+  // The combined name used on the map (e.g. Whitmandell).
   location: string;
+  // The Lord of the Rings place it stands in for, and its other name in brackets: the Sindarin
+  // name, or the English meaning when the usual name is already Sindarin. Left out when neither
+  // applies.
   lotrLocation: string;
-  // Empty when none are listed.
-  characters: string;
-  events: string;
+  lotrAltName?: string;
+  // The real place in Walla Walla.
+  wallaWallaName: string;
+  description: string;
+  characters: CharacterId[];
   score: string;
   // Without a photo, the left page shows a close-up of the location on the map instead.
   photo?: { image: ImageSource };
@@ -92,6 +99,8 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
   // A multi-spread jump in progress. `key` restarts the animation for each new jump.
   const [jump, setJump] = useState<{ from: number; to: number; key: number } | null>(null);
   const busy = turning !== null || jump !== null;
+  // The character whose page is open over the book, if any.
+  const [openCharacter, setOpenCharacter] = useState<CharacterId | null>(null);
 
   // The open spread (value of `current`) where a location's two pages can be seen.
   // Sides on a leaf's front show on the right of spread N, backs on the left of spread N + 1.
@@ -175,7 +184,14 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         number={index * 2 + 1}
         pageWidth={pageWidth}
       />,
-      <LocationTextPage key={`text-${index}`} page={page} number={index * 2 + 2} pageWidth={pageWidth} />,
+      <LocationTextPage
+        key={`text-${index}`}
+        page={page}
+        number={index * 2 + 2}
+        pageWidth={pageWidth}
+        interactive={!busy}
+        onOpenCharacter={setOpenCharacter}
+      />,
     ]),
     <EndPage key="end" pageWidth={pageWidth} />,
   ];
@@ -245,6 +261,11 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       // Ignore held-down keys so one press turns one page.
       if (event.repeat) return;
+      // With a character's page open, Escape closes it and the book stays put.
+      if (openCharacter) {
+        if (event.key === 'Escape') setOpenCharacter(null);
+        return;
+      }
       if (event.key === 'ArrowRight') turn(1);
       else if (event.key === 'ArrowLeft') turn(-1);
     };
@@ -313,6 +334,18 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         onPress={() => riffleTo(MAP_SPREAD)}
         style={styles.homeButton}
       />
+
+      {openCharacter && (
+        <CharacterPage
+          id={openCharacter}
+          appearsIn={pages
+            .filter((page) => page.characters.includes(openCharacter))
+            .map((page) => page.location)}
+          width={pageWidth * 0.95}
+          height={pageHeight * 0.92}
+          onClose={() => setOpenCharacter(null)}
+        />
+      )}
     </Animated.View>
   );
 }
@@ -802,15 +835,15 @@ type LocationPageProps = {
   pageWidth: number;
 };
 
-// Left page of a location: its photo (or a close-up of the map), taped in like a print, with
-// the Walla Walla name underneath.
+// Left page of a location: its photo (or a close-up of the map) at the top, taped in like a
+// print, then the combined name, the Lord of the Rings name, and the real Walla Walla place.
 function LocationPhotoPage({ page, map, number, pageWidth }: LocationPageProps & { map: BookMap }) {
   const tape = { width: pageWidth * 0.16, height: pageWidth * 0.045 };
   const printWidth = pageWidth * 0.8;
   // Long names get smaller type so they fit in two lines.
   const titleSize = pageWidth * (page.location.length > 20 ? 0.062 : 0.085);
   return (
-    <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.13 }]}>
+    <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
       <View style={styles.print}>
         {page.photo ? (
           <Image
@@ -832,42 +865,61 @@ function LocationPhotoPage({ page, map, number, pageWidth }: LocationPageProps &
         <View style={[styles.tape, tape, { left: -tape.width * 0.3, transform: [{ rotate: '-35deg' }] }]} />
         <View style={[styles.tape, tape, { right: -tape.width * 0.3, transform: [{ rotate: '35deg' }] }]} />
       </View>
-      <Text style={[styles.pageTitle, { fontSize: titleSize, marginTop: pageWidth * 0.07 }]}>
+      <Text style={[styles.pageTitle, { fontSize: titleSize, marginTop: pageWidth * 0.06 }]}>
         {page.location}
       </Text>
+      <Text style={[styles.lotrName, { fontSize: pageWidth * 0.05, marginTop: pageWidth * 0.015 }]}>
+        {page.lotrLocation}
+        {page.lotrAltName && <Text style={styles.altName}> ({page.lotrAltName})</Text>}
+      </Text>
       <View style={styles.rule} />
-      <Text style={[styles.pageNumber, { fontSize: pageWidth * 0.04 }]}>{number}</Text>
+      <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{page.wallaWallaName}</Text>
+      {/* Pushes the page number to the bottom, keeping a little space above it on full pages. */}
+      <View style={styles.pushDown} />
+      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+        {number}
+      </Text>
     </View>
   );
 }
 
-// Right page of a location: the Lord of the Rings place it stands in for, and who's there,
-// what happens, and the music that goes with it.
-function LocationTextPage({ page, number, pageWidth }: LocationPageProps) {
-  const sections = [
-    { label: 'Characters', text: page.characters },
-    { label: 'Events', text: page.events },
-    { label: 'Score', text: page.score },
-  ].filter((section) => section.text !== '');
+type LocationTextPageProps = LocationPageProps & {
+  interactive: boolean;
+  onOpenCharacter: (id: CharacterId) => void;
+};
 
+// Right page of a location: a short description at the top, the characters as round portraits
+// running left to right like lines of text, and the score at the bottom.
+function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacter }: LocationTextPageProps) {
+  const portraitSize = pageWidth * 0.115;
   return (
     <View
       style={[
         styles.pageInner,
         { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.12, paddingBottom: pageWidth * 0.07 },
       ]}>
-      <Text style={[styles.pageHeading, { fontSize: pageWidth * 0.062 }]}>{page.lotrLocation}</Text>
-      <Text style={[styles.pageSubheading, { fontSize: pageWidth * 0.036 }]}>in Middle-earth</Text>
-      <View style={styles.rule} />
-      {sections.map((section) => (
-        <View key={section.label} style={{ marginTop: pageWidth * 0.03 }}>
-          <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>{section.label}</Text>
-          <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
-            {section.text}
-          </Text>
-        </View>
-      ))}
-      <Text style={[styles.pageNumber, { fontSize: pageWidth * 0.04 }]}>{number}</Text>
+      <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.06 }]}>
+        {page.description}
+      </Text>
+
+      <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03, marginTop: pageWidth * 0.05 }]}>
+        Characters
+      </Text>
+      <View style={[styles.portraits, { rowGap: pageWidth * 0.025, marginTop: pageWidth * 0.015 }]}>
+        {page.characters.map((id) => (
+          <Portrait key={id} id={id} size={portraitSize} disabled={!interactive} onPress={onOpenCharacter} />
+        ))}
+      </View>
+
+      <View style={[styles.score, { paddingTop: pageWidth * 0.03 }]}>
+        <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Score</Text>
+        <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
+          {page.score}
+        </Text>
+      </View>
+      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+        {number}
+      </Text>
     </View>
   );
 }
@@ -1035,19 +1087,38 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(236, 226, 196, 0.8)',
     boxShadow: '0 1px 2px rgba(59, 42, 26, 0.25)',
   },
-  pageHeading: {
-    fontFamily: Fonts.serif,
-    fontWeight: 700,
-    color: INK,
-    textAlign: 'center',
-  },
-  pageSubheading: {
+  lotrName: {
     fontFamily: Fonts.serif,
     fontStyle: 'italic',
     color: INK,
-    opacity: 0.75,
     textAlign: 'center',
-    marginTop: 2,
+  },
+  altName: {
+    opacity: 0.75,
+  },
+  wallaWallaName: {
+    fontFamily: Fonts.serif,
+    fontWeight: 700,
+    color: INK,
+    opacity: 0.8,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+  },
+  portraits: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  score: {
+    // Pushes the score to the bottom of the page.
+    marginTop: 'auto',
+  },
+  pageNumberAfterScore: {
+    marginTop: 8,
+  },
+  pushDown: {
+    flex: 1,
+    minHeight: 8,
   },
   sectionLabel: {
     fontFamily: Fonts.serif,
