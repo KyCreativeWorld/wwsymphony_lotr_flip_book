@@ -13,9 +13,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { BackCover, FrontCover, InsideCover, LEATHER_DARK } from '@/components/book-cover';
-import { CharacterPage, Portrait } from '@/components/character-page';
+import { Bust, Portrait } from '@/components/character-page';
 import { MapHalf, MapInset, type BookMap, type MapMarker, type PlacedMarker } from '@/components/book-map';
-import { type CharacterId } from '@/constants/characters';
+import { lookUpCharacter, type CharacterId } from '@/constants/characters';
 import { Fonts } from '@/constants/theme';
 
 const TURN_DURATION = 900;
@@ -41,6 +41,9 @@ const PAGE_PAPER = {
 };
 const PAPER_EDGE = '#d9c69c';
 const INK = '#3b2a1a';
+// Clickable place names, in the dark red of the cover.
+const LINK = '#7a1a17';
+const LINK_HOVER = '#a8261f';
 
 // Pages are shaped like a sheet of US letter paper: 8.5 by 11.
 export const PAGE_ASPECT = 11 / 8.5;
@@ -99,16 +102,18 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
   // A multi-spread jump in progress. `key` restarts the animation for each new jump.
   const [jump, setJump] = useState<{ from: number; to: number; key: number } | null>(null);
   const busy = turning !== null || jump !== null;
-  // The character whose page is open over the book, if any.
-  const [openCharacter, setOpenCharacter] = useState<CharacterId | null>(null);
 
-  // The open spread (value of `current`) where a location's two pages can be seen.
-  // Sides on a leaf's front show on the right of spread N, backs on the left of spread N + 1.
-  const spreadForPage = (pageIndex: number) => {
-    const side = 1 + pageIndex * 2;
-    const leaf = 1 + Math.floor(side / 2);
-    return side % 2 === 0 ? leaf : leaf + 1;
-  };
+  // Every character on a location page gets their own spread after the locations, in order of
+  // first appearance.
+  const characterIds = [...new Set(pages.flatMap((page) => page.characters))];
+
+  // The open spread (value of `current`) showing the given side (0 is the map's right half) on
+  // its left. Sides on a leaf's front show on the right of spread N, backs on the left of
+  // spread N + 1.
+  const spreadForLeftSide = (side: number) => 2 + Math.floor(side / 2);
+  // The left-hand side of each location's and each character's spread.
+  const locationSide = (pageIndex: number) => 1 + pageIndex * 2;
+  const characterSide = (id: CharacterId) => 1 + pages.length * 2 + characterIds.indexOf(id) * 2;
 
   // Turns one leaf from spread `from` to the next one in `direction`.
   const turnOnce = (from: number, direction: 1 | -1, onDone?: (spread: number) => void) => {
@@ -149,7 +154,8 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
     else travel(current);
   };
 
-  const goToPage = (pageIndex: number) => riffleTo(spreadForPage(pageIndex));
+  const goToPage = (pageIndex: number) => riffleTo(spreadForLeftSide(locationSide(pageIndex)));
+  const goToCharacter = (id: CharacterId) => riffleTo(spreadForLeftSide(characterSide(id)));
 
   const renderMapHalf = (side: 'left' | 'right') => {
     const markers: PlacedMarker[] = pages.map((page, pageIndex) => ({
@@ -170,8 +176,9 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
   };
 
   // Page sides in reading order after the cover: the map's right half, then two pages per
-  // location (photo on the left, description on the right), then "The End".
-  // Pairs of sides make up each paper leaf.
+  // location (photo on the left, description on the right), two per character (bust on the
+  // left, bio on the right), then "The End". Pairs of sides make up each paper leaf, and each
+  // side's index is its page number.
   const sides: ReactNode[] = [
     <View key="map" style={StyleSheet.absoluteFill}>
       {renderMapHalf('right')}
@@ -181,16 +188,30 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         key={`photo-${index}`}
         page={page}
         map={map}
-        number={index * 2 + 1}
+        number={locationSide(index)}
         pageWidth={pageWidth}
       />,
       <LocationTextPage
         key={`text-${index}`}
         page={page}
-        number={index * 2 + 2}
+        number={locationSide(index) + 1}
         pageWidth={pageWidth}
         interactive={!busy}
-        onOpenCharacter={setOpenCharacter}
+        onOpenCharacter={goToCharacter}
+      />,
+    ]),
+    ...characterIds.flatMap((id) => [
+      <CharacterBustPage key={`bust-${id}`} id={id} number={characterSide(id)} pageWidth={pageWidth} />,
+      <CharacterInfoPage
+        key={`info-${id}`}
+        id={id}
+        appearsIn={pages.flatMap((page, pageIndex) =>
+          page.characters.includes(id) ? [{ name: page.location, pageIndex }] : [],
+        )}
+        number={characterSide(id) + 1}
+        pageWidth={pageWidth}
+        interactive={!busy}
+        onOpenLocation={goToPage}
       />,
     ]),
     <EndPage key="end" pageWidth={pageWidth} />,
@@ -261,11 +282,6 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       // Ignore held-down keys so one press turns one page.
       if (event.repeat) return;
-      // With a character's page open, Escape closes it and the book stays put.
-      if (openCharacter) {
-        if (event.key === 'Escape') setOpenCharacter(null);
-        return;
-      }
       if (event.key === 'ArrowRight') turn(1);
       else if (event.key === 'ArrowLeft') turn(-1);
     };
@@ -334,18 +350,6 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         onPress={() => riffleTo(MAP_SPREAD)}
         style={styles.homeButton}
       />
-
-      {openCharacter && (
-        <CharacterPage
-          id={openCharacter}
-          appearsIn={pages
-            .filter((page) => page.characters.includes(openCharacter))
-            .map((page) => page.location)}
-          width={pageWidth * 0.95}
-          height={pageHeight * 0.92}
-          onClose={() => setOpenCharacter(null)}
-        />
-      )}
     </Animated.View>
   );
 }
@@ -924,6 +928,104 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
   );
 }
 
+// Left page of a character: their bust at the top, framed like the location photos, then their
+// name, race, and title.
+function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number: number; pageWidth: number }) {
+  const character = lookUpCharacter(id);
+  const tape = { width: pageWidth * 0.16, height: pageWidth * 0.045 };
+  return (
+    <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
+      <View style={styles.print}>
+        <Bust id={id} />
+        <View style={[styles.tape, tape, { left: -tape.width * 0.3, transform: [{ rotate: '-35deg' }] }]} />
+        <View style={[styles.tape, tape, { right: -tape.width * 0.3, transform: [{ rotate: '35deg' }] }]} />
+      </View>
+      <Text style={[styles.pageTitle, { fontSize: pageWidth * 0.085, marginTop: pageWidth * 0.06 }]}>
+        {character.name}
+      </Text>
+      <Text style={[styles.lotrName, { fontSize: pageWidth * 0.05, marginTop: pageWidth * 0.015 }]}>
+        {character.race}
+      </Text>
+      <View style={styles.rule} />
+      <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{character.title}</Text>
+      <View style={styles.pushDown} />
+      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+        {number}
+      </Text>
+    </View>
+  );
+}
+
+type CharacterInfoPageProps = {
+  id: CharacterId;
+  // The locations this character appears in, in book order.
+  appearsIn: { name: string; pageIndex: number }[];
+  number: number;
+  pageWidth: number;
+  interactive: boolean;
+  onOpenLocation: (pageIndex: number) => void;
+};
+
+// Right page of a character: a short bio at the top, and at the bottom the places they appear,
+// each a quick link to that location's pages.
+function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOpenLocation }: CharacterInfoPageProps) {
+  const character = lookUpCharacter(id);
+  return (
+    <View
+      style={[
+        styles.pageInner,
+        { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.12, paddingBottom: pageWidth * 0.07 },
+      ]}>
+      <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.06 }]}>
+        {character.about}
+      </Text>
+
+      <View style={[styles.score, { paddingTop: pageWidth * 0.03 }]}>
+        <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Appears In</Text>
+        <View style={[styles.links, { columnGap: pageWidth * 0.035, rowGap: pageWidth * 0.012 }]}>
+          {appearsIn.map((place) => (
+            <LocationLink
+              key={place.pageIndex}
+              name={place.name}
+              fontSize={pageWidth * 0.04}
+              disabled={!interactive}
+              onPress={() => onOpenLocation(place.pageIndex)}
+            />
+          ))}
+        </View>
+      </View>
+      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+        {number}
+      </Text>
+    </View>
+  );
+}
+
+type LocationLinkProps = {
+  name: string;
+  fontSize: number;
+  disabled: boolean;
+  onPress: () => void;
+};
+
+// A place name that turns to that location's pages when clicked.
+function LocationLink({ name, fontSize, disabled, onPress }: LocationLinkProps) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Go to ${name}`}
+      disabled={disabled}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}>
+      <Text style={[styles.link, hovered && styles.linkHovered, { fontSize, lineHeight: fontSize * 1.45 }]}>
+        {name}
+      </Text>
+    </Pressable>
+  );
+}
+
 function EndPage({ pageWidth }: { pageWidth: number }) {
   return (
     <View style={[styles.pageInner, styles.centered]}>
@@ -1104,6 +1206,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
+  },
+  links: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  link: {
+    fontFamily: Fonts.serif,
+    color: LINK,
+    textDecorationLine: 'underline',
+    textDecorationColor: 'rgba(122, 26, 23, 0.4)',
+  },
+  linkHovered: {
+    color: LINK_HOVER,
+    textDecorationColor: LINK_HOVER,
   },
   portraits: {
     flexDirection: 'row',
