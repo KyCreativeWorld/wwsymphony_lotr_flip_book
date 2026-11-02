@@ -43,18 +43,31 @@ x y z
 ```
 
 - **Angles:** in degrees.
-- **Positions:** any unit.
+- **Positions:** any unit, as long as `src/motion/setup.ts` uses the same one.
 - **Position only:** if the tracker reports just `x y z`, the cursor follows where the object is instead of where it points.
 - **Other lines:** anything else, such as headers, is ignored.
 
-## 2. Calibrate
+## 2. Measure the setup
 
-Click **Calibrate** in the panel. Each step counts down 3 seconds while you hold still:
+The tracker's base sits at the screen. Set two numbers in `src/motion/setup.ts`, in the tracker's position units (Polhemus trackers report inches by default):
 
-1. Point the object at the top-left corner of the screen.
-2. Point it at the bottom-right corner.
-3. Hold it out to your left, where a swipe would start.
-4. Hold it out to your right, where a swipe would end.
+- **`TRACKER_DISTANCE`:** how far the object is from the tracker's base while a visitor uses it. The tracker panel shows the live `distance`, so hold the object where visitors will and copy that number.
+- **`SCREEN_WIDTH`:** the width of the screen's picture.
+
+These drive the movement:
+
+- **Pointing:** it works like a laser pointer. Turning the object by an angle from straight ahead moves the cursor `TRACKER_DISTANCE × tan(angle)` across a screen that is `SCREEN_WIDTH` wide. Farther from the screen, a smaller turn crosses it.
+- **Swipes:** a swipe must sweep 20° as seen from the tracker's base, which is `2 × TRACKER_DISTANCE × tan(10°)` sideways. That is about 12.7 inches at 36 inches away, so farther away, swipes must be longer.
+
+## 3. Calibrate
+
+Click **Calibrate** in the panel. Stand where visitors will. Each step counts down 3 seconds while you hold still:
+
+1. Point the object at the centre of the screen.
+2. Hold it out to your left, and point it at the top-left corner.
+3. Hold it out to your right, and point it at the bottom-right corner.
+
+The centre sets where "straight ahead" is. The two sides set which way is left, right, up and down, whichever way up the tracker is mounted. How far the cursor and swipes move comes from `setup.ts`, so after changing the distance there is no need to recalibrate, only to reload the page.
 
 Recalibrate whenever the tracker, the screen or the spot visitors stand in moves. The calibration is saved in the browser.
 
@@ -62,8 +75,9 @@ Recalibrate whenever the tracker, the screen or the spot visitors stand in moves
 
 The thresholds are constants at the top of the source files:
 
+- **`src/motion/setup.ts`:** the distance and screen width above.
 - **`src/motion/swipe-detector.ts`:**
-  - how far a swipe must go (`SWIPE_DISTANCE`, as a share of the calibrated left-to-right distance)
+  - how wide a swipe must sweep (`SWIPE_ANGLE`, in degrees as seen from the tracker's base)
   - how fast it must be (`SWIPE_TIME`)
   - how long motion is ignored after a swipe, so the hand coming back doesn't turn the page back (`COOLDOWN`)
 - **`src/components/motion-control.web.tsx`:**

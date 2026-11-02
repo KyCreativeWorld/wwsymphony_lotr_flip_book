@@ -1,7 +1,11 @@
+import { TRACKER_DISTANCE } from '@/motion/setup';
+
 export type Gesture = 'left-to-right' | 'right-to-left';
 
-// A swipe covers at least this much of the calibrated left-to-right distance...
-const SWIPE_DISTANCE = 0.5;
+// A swipe sweeps across at least this angle as seen from the tracker's base (degrees)...
+const SWIPE_ANGLE = 20;
+// ...which means moving the object this far sideways at TRACKER_DISTANCE (about 12.7 at 36)...
+const SWIPE_LENGTH = 2 * TRACKER_DISTANCE * Math.tan((SWIPE_ANGLE * Math.PI) / 360);
 // ...within this many milliseconds, so slowly moving the object to aim doesn't count.
 const SWIPE_TIME = 450;
 // After a swipe, motion is ignored for this long (ms). This covers the rest of the swipe and the
@@ -15,7 +19,7 @@ export class SwipeDetector {
 
   constructor(private onGesture: (gesture: Gesture) => void) {}
 
-  // `position` is from swipePosition(): 0 at the left end of a swipe, 1 at the right.
+  // `position` is from sidewaysPosition(): how far right the object is, in the tracker's units.
   add(position: number, time: number) {
     if (time < this.cooldownUntil) {
       this.history = [];
@@ -26,7 +30,7 @@ export class SwipeDetector {
 
     for (const earlier of this.history) {
       const moved = position - earlier.position;
-      if (Math.abs(moved) >= SWIPE_DISTANCE) {
+      if (Math.abs(moved) >= SWIPE_LENGTH) {
         this.history = [];
         this.cooldownUntil = time + COOLDOWN;
         this.onGesture(moved > 0 ? 'left-to-right' : 'right-to-left');

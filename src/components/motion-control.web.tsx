@@ -4,12 +4,14 @@ import { sendBookCommand, type BookCommand } from '@/motion/book-commands';
 import {
   averagePose,
   CALIBRATION_STEPS,
+  calibrationProblem,
   screenPoint,
-  swipePosition,
+  sidewaysPosition,
   type Calibration,
   type CalibrationStep,
 } from '@/motion/calibration';
 import { clickableAt, sendClick, sendHover } from '@/motion/dwell-click';
+import { TRACKER_DISTANCE } from '@/motion/setup';
 import { SwipeDetector, type Gesture } from '@/motion/swipe-detector';
 import {
   connectSerial,
@@ -30,7 +32,8 @@ import { parseTrackerLine, type TrackerSample } from '@/motion/tracker-sample';
 //
 // A small button in the bottom-right corner (or the T key) opens a panel for connecting the
 // tracker and calibrating it. Settings are remembered in this browser, and the book reconnects
-// on its own next time.
+// on its own next time. How far the tracker is from the object, and the screen's size, are set in
+// src/motion/setup.ts.
 
 // How long the cursor rests on something before it's clicked.
 const DWELL_TIME = 1000;
@@ -66,7 +69,10 @@ function loadSettings(): Settings {
   const defaults: Settings = { bridgeUrl: DEFAULT_BRIDGE_URL, baudRate: DEFAULT_BAUD_RATE };
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved ? { ...defaults, ...(JSON.parse(saved) as Partial<Settings>) } : defaults;
+    const settings: Settings = saved ? { ...defaults, ...(JSON.parse(saved) as Partial<Settings>) } : defaults;
+    // Calibrations from before the centre pose was added don't work any more.
+    if (settings.calibration && !settings.calibration.centre) delete settings.calibration;
+    return settings;
   } catch {
     // Pre-rendering on the server, or storage is blocked.
     return defaults;
@@ -82,20 +88,16 @@ function saveSettings(settings: Settings) {
 }
 
 const STEP_INSTRUCTIONS: Record<CalibrationStep, { pointing: string; positionOnly: string }> = {
+  centre: {
+    pointing: 'Stand where visitors will, and point the object at the centre of the screen.',
+    positionOnly: 'Stand where visitors will, and hold the object in front of you.',
+  },
   topLeft: {
-    pointing: 'Point the object at the top-left corner of the screen.',
-    positionOnly: 'Hold the object in front of the top-left corner of the screen.',
-  },
-  bottomRight: {
-    pointing: 'Point the object at the bottom-right corner of the screen.',
-    positionOnly: 'Hold the object in front of the bottom-right corner of the screen.',
-  },
-  left: {
-    pointing: 'Hold the object out to your left, where a swipe would start.',
+    pointing: 'Hold the object out to your left, and point it at the top-left corner of the screen.',
     positionOnly: 'Hold the object out to your left, where a swipe would start.',
   },
-  right: {
-    pointing: 'Hold the object out to your right, where a swipe would end.',
+  bottomRight: {
+    pointing: 'Hold the object out to your right, and point it at the bottom-right corner of the screen.',
     positionOnly: 'Hold the object out to your right, where a swipe would end.',
   },
 };
@@ -174,7 +176,7 @@ export function MotionControl() {
     recent.current.push(sample);
     while (recent.current.length > 0 && sample.time - recent.current[0].time > 1000) recent.current.shift();
     if (calibration.current && !isCalibrating.current) {
-      detector.current?.add(swipePosition(calibration.current, sample.position), sample.time);
+      detector.current?.add(sidewaysPosition(calibration.current, sample.position), sample.time);
     }
   };
 
@@ -263,7 +265,7 @@ export function MotionControl() {
         return;
       }
 
-      const point = screenPoint(calibrated, sample);
+      const point = screenPoint(calibrated, sample, window.innerHeight / window.innerWidth);
       const targetX = clamp(point.x, 0, 1) * window.innerWidth;
       const targetY = clamp(point.y, 0, 1) * window.innerHeight;
       const c = cursor.current;
@@ -299,16 +301,20 @@ export function MotionControl() {
         setCalibrating({ ...calibrating, error: 'No readings from the tracker. Is it connected?' });
         return;
       }
-      const step = CALIBRATION_STEPS[calibrating.step];
-      if (step === 'left' || step === 'right') draft.current[step] = pose.position;
-      else draft.current[step] = pose;
+      draft.current[CALIBRATION_STEPS[calibrating.step]] = pose;
 
       if (calibrating.step + 1 < CALIBRATION_STEPS.length) {
         setCalibrating({ step: calibrating.step + 1, countdown: CALIBRATION_COUNTDOWN });
-      } else {
-        updateSettings({ calibration: draft.current as Calibration });
-        setCalibrating(null);
+        return;
       }
+      const finished = draft.current as Calibration;
+      const problem = calibrationProblem(finished);
+      if (problem) {
+        setCalibrating({ ...calibrating, error: problem });
+        return;
+      }
+      updateSettings({ calibration: finished });
+      setCalibrating(null);
     }, 1000);
     return () => clearTimeout(timer);
   }, [calibrating]);
@@ -375,7 +381,9 @@ export function MotionControl() {
       )}
 
       {calibrating && step && (
-        <div style={styles.calibrationOverlay}>
+        // The card moves down out of the way while the target is in the centre.
+        <div style={{ ...styles.calibrationOverlay, ...(step === 'centre' && styles.calibrationOverlayLow) }}>
+          {step === 'centre' && <div style={{ ...styles.cornerTarget, top: '50%', left: '50%' }} />}
           {step === 'topLeft' && <div style={{ ...styles.cornerTarget, top: 0, left: 0 }} />}
           {step === 'bottomRight' && <div style={{ ...styles.cornerTarget, bottom: 0, right: 0 }} />}
           <div style={styles.calibrationCard}>
@@ -466,6 +474,8 @@ export function MotionControl() {
               <>
                 <br />
                 position {readout.sample.position.map(format).join(', ')}
+                <br />
+                distance {format(Math.hypot(...readout.sample.position))} (setup.ts: {TRACKER_DISTANCE})
                 {readout.sample.orientation && (
                   <>
                     <br />
@@ -550,6 +560,7 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: 'center',
     backgroundColor: 'rgba(15, 10, 6, 0.7)',
   },
+  calibrationOverlayLow: { alignItems: 'flex-end', paddingBottom: 40 },
   cornerTarget: {
     position: 'fixed',
     width: 70,
