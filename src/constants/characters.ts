@@ -1,142 +1,142 @@
 import { type ImageSource } from 'expo-image';
 
 export type Character = {
+  // Full name, for the character's own page.
   name: string;
+  // Short name, for the portraits on location pages.
+  shortName: string;
   race: string;
-  // An epithet shown under the race, e.g. Ring-bearer.
-  title: string;
-  // A short bio for the top of the character's right-hand page.
+  // An epithet shown under the race, e.g. Ring-bearer. Not every character has one.
+  title?: string;
+  home: string;
+  items: string;
+  // A short description for the top of the character's right-hand page.
   about: string;
-  // A bust of the character, used on their page and in round portraits. Without one, a
+  // A sketch of the character, used on their page and in round portraits. Without one, a
   // placeholder silhouette shows instead.
   image?: ImageSource;
 };
 
-// Everyone who appears on a location page, by id. Location pages list these ids in
-// src/constants/locations.ts, and each character gets their own two-page spread after the
-// locations, in order of first appearance. Names are written as in assets/page_info.txt.
+// Everyone with a page in the book, by id, as written in assets/character_info.txt. Location
+// pages list these ids in src/constants/locations.ts, and each character gets their own two-page
+// spread after the locations, in order of first appearance.
 //
-// To add a bust, put the image in assets/images/characters/ and add to that character, e.g.
-//   image: require('@/assets/images/characters/frodo.png'),
+// Busts are line drawings in assets/images/characters/. A character without one shows a
+// placeholder silhouette until it's added, e.g.
+//   image: require('@/assets/images/characters/Legolas.png'),
 export const CHARACTERS = {
-  bilbo: {
-    name: 'Bilbo',
-    race: 'Hobbit',
-    title: 'The Burglar',
-    about:
-      'Frodo’s uncle, who found the One Ring on his own adventure long ago. After his eleventy-first birthday he leaves the Shire and retires to Rivendell.',
-  },
   frodo: {
-    name: 'Frodo',
+    image: require('@/assets/images/characters/Frodo.png'),
+    name: 'Frodo Baggins',
+    shortName: 'Frodo',
     race: 'Hobbit',
     title: 'Ring-bearer',
+    home: 'Bag End, Hobbiton (The Shire)',
+    items: 'The One Ring, Sting',
     about:
-      'Bilbo’s heir, who inherits Bag End and the One Ring. He sets out from the Shire to carry the Ring to its destruction.',
+      'An unusually adventurous hobbit tasked with the impossible: to take the One Ring to Mount Doom, the only place where it can be destroyed.',
   },
   samwise: {
-    name: 'Samwise',
+    image: require('@/assets/images/characters/Sam.png'),
+    name: 'Samwise Gamgee',
+    shortName: 'Samwise',
     race: 'Hobbit',
-    title: 'Samwise the Brave',
-    about: 'Frodo’s gardener and most loyal friend, who never leaves his side.',
+    title: 'Gardener',
+    home: 'Bagshot Row, Hobbiton (The Shire)',
+    items: 'Potatoes, Soil from Galadriel’s garden and a Mallorn seed',
+    about:
+      'A loyal hobbit who, initially Frodo’s gardener, joins and helps Frodo through his journey to Mount Doom to destroy the One Ring.',
   },
   merry: {
-    name: 'Marry',
+    image: require('@/assets/images/characters/Merry.png'),
+    name: 'Meriadoc “Merry” Brandybuck',
+    shortName: 'Merry',
     race: 'Hobbit',
-    title: 'Esquire of Rohan',
-    about: 'A Brandybuck of Buckland and Frodo’s cousin, quick-witted and always ready for an adventure.',
+    home: 'Brandy Hall, Buckland',
+    items: 'Ent-draught, Barrow Blade',
+    about:
+      'A dependable hobbit who, because of being cousins and friends with the Ring-bearer Frodo Baggins, joins the fellowship with his best friend and cousin Pippin.',
   },
   pippin: {
-    name: 'Pippin',
+    image: require('@/assets/images/characters/Pippin.png'),
+    name: 'Peregrin “Pippin” Took',
+    shortName: 'Pippin',
     race: 'Hobbit',
-    title: 'Guard of the Citadel',
-    about: 'The youngest of the hobbits in the Fellowship, curious, cheerful and often in trouble.',
+    home: 'The Shire',
+    items: 'Ent-draught, Barrow Blade',
+    about:
+      'An impulsive, but loyal hobbit who, because of being cousins and friends with the Ring-bearer Frodo Baggins, joins the fellowship with his best friend and cousin Merry.',
   },
   gandalf: {
+    image: require('@/assets/images/characters/Gandalf.png'),
     name: 'Gandalf the Grey',
-    race: 'Wizard (Maia)',
-    title: 'Mithrandir',
+    shortName: 'Gandalf the Grey',
+    race: 'Maia',
+    title: 'Grey Wizard',
+    home: 'Valinor',
+    items: 'Wizard Staff (he had one as Gandalf the Grey and one as Gandalf the White), fireworks, Glamdring',
     about:
-      'A wandering wizard and friend of the hobbits, who guides the Fellowship until he falls fighting the Balrog in Moria.',
-  },
-  saruman: {
-    name: 'Saruman the White',
-    race: 'Wizard (Maia)',
-    title: 'Head of the White Council',
-    about:
-      'Once the wisest of the wizards, he turns to the Dark Lord, betrays Gandalf and imprisons him in the tower of Orthanc.',
+      'The most loyal of the five Wizards sent to Middle-earth, Gandalf discovered that Bilbo and later Frodo possessed the One Ring and initiated the forming of the Fellowship of the Ring.',
   },
   aragorn: {
-    name: 'Aragorn',
-    race: 'Man (Dúnedain)',
-    title: 'Strider, Heir of Isildur',
+    image: require('@/assets/images/characters/Aragorn.png'),
+    name: 'Aragorn, son of Arathorn',
+    shortName: 'Aragorn',
+    race: 'Human',
+    title: 'Isildur’s Heir',
+    home: 'Rivendell',
+    items: 'The Shards of Narsil, Evenstar',
     about:
-      'A Ranger of the North and heir to the throne of Gondor, who meets the hobbits at Bree and guides them to Rivendell.',
-  },
-  nazgul: {
-    name: 'Nazgul',
-    race: 'Ringwraiths',
-    title: 'The Nine Riders',
-    about:
-      'Nine kings of Men enslaved by rings of power, who hunt the hobbits on black horses in search of the One Ring.',
-  },
-  elrond: {
-    name: 'Elron',
-    race: 'Half-elven',
-    title: 'Lord of Rivendell',
-    about:
-      'The master of Rivendell and a great healer, who calls the Council where the fate of the One Ring is decided.',
-  },
-  boromir: {
-    name: 'Boromir',
-    race: 'Man (Gondor)',
-    title: 'Captain of Gondor',
-    about:
-      'A proud warrior of Gondor who joins the Fellowship, but is tempted by the Ring and tries to take it from Frodo.',
-  },
-  gloin: {
-    name: 'Glóin',
-    race: 'Dwarf',
-    title: 'Father of Gimli',
-    about: 'A Dwarf of the Lonely Mountain who once travelled with Bilbo, and comes to the Council of Elron.',
-  },
-  gimli: {
-    name: 'Gimli',
-    race: 'Dwarf',
-    title: 'Son of Glóin',
-    about: 'A stout-hearted Dwarf warrior who represents his people in the Fellowship.',
-  },
-  legolas: {
-    name: 'Legolas',
-    race: 'Elf',
-    title: 'Prince of the Woodland Realm',
-    about: 'A keen-eyed Elf archer from Mirkwood who represents the Elves in the Fellowship.',
-  },
-  balrog: {
-    name: 'The Balrog',
-    race: 'Maia (Balrog)',
-    title: 'Durin’s Bane',
-    about:
-      'An ancient demon of shadow and flame woken deep in Moria, who drags Gandalf into the abyss.',
-  },
-  galadriel: {
-    name: 'Lady Galadriel',
-    race: 'Elf',
-    title: 'Lady of the Golden Wood',
-    about:
-      'The wise and powerful ruler of Lothlórien, who gives the Fellowship gifts for their journey.',
-  },
-  celeborn: {
-    name: 'Lord Celeborn',
-    race: 'Elf',
-    title: 'Lord of Lothlórien',
-    about: 'Galadriel’s husband, who rules the Golden Wood beside her and welcomes the Fellowship.',
+      'The Heir of Isildur, a Ranger of the North, and the rightful heir of Gondor, Aragorn joins the Fellowship of the Ring to help Frodo destroy the One Ring and fiercely fights against the forces of Sauron.',
   },
   sauron: {
     name: 'Sauron',
+    shortName: 'Sauron',
     race: 'Maia',
     title: 'The Dark Lord',
+    home: 'Mordor',
+    items: 'The One Ring',
+    about: 'The Dark Lord, maker of the One Ring.',
+  },
+  legolas: {
+    name: 'Legolas Greenleaf',
+    shortName: 'Legolas',
+    race: 'Elf',
+    title: 'Prince of the Woodland Realm',
+    home: 'Woodland Realm, Mirkwood',
+    items: 'Elven Bow, long white knife (one in the books, two in the movies)',
     about:
-      'The maker of the One Ring, who seeks it to rule all of Middle-earth. He watches as a great flaming Eye.',
+      'A Woodland Elf who forms an unlikely, because of the ancient quarrel between Elves and Dwarves, friendship with Dwarf Gimli and joins the Fellowship of the Ring as a representative of the Elves.',
+  },
+  gimli: {
+    name: 'Gimli, son of Glóin',
+    shortName: 'Gimli',
+    race: 'Dwarf',
+    home: 'Erebor, Blue Mountains',
+    items:
+      'Axe (one in the books). Movies: A "bearded" axe, Two throwing axes, A battle axe, Double-bladed axe',
+    about:
+      'A Dwarf of the House of Durin who forms an unlikely, because of the ancient quarrel between Elves and Dwarves, friendship with Elf Legolas and joins the Fellowship of the Ring as a representative of the Dwarves.',
+  },
+  boromir: {
+    name: 'Boromir',
+    shortName: 'Boromir',
+    race: 'Human',
+    title: 'Captain of the White Tower',
+    home: 'Minas Tirith',
+    items: 'Great Horn (aka the Horn of Boromir)',
+    about:
+      'A renowned warrior and the heir to the Stewardship of Gondor, the first line of defense against Mordor, who joins the Fellowship of the Ring as a representative of Gondor.',
+  },
+  saruman: {
+    name: 'Saruman the White',
+    shortName: 'Saruman the White',
+    race: 'Maia',
+    title: 'White Wizard, head of the White Council',
+    home: 'Isengard',
+    items: 'Wizard Staff, Palantir',
+    about:
+      'The first wizard to be sent to Middle-earth and the head of the White Council, Saruman rules Isengard and studies the movements of Sauron.',
   },
 } satisfies Record<string, Character>;
 

@@ -45,6 +45,9 @@ const INK = '#3b2a1a';
 const LINK = '#7a1a17';
 const LINK_HOVER = '#a8261f';
 
+// What a location's score says when no piece of the score plays there.
+const NO_SCORE = 'Not featured';
+
 // Pages are shaped like a sheet of US letter paper: 8.5 by 11.
 export const PAGE_ASPECT = 11 / 8.5;
 
@@ -917,9 +920,14 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
 
       <View style={[styles.score, { paddingTop: pageWidth * 0.03 }]}>
         <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Score</Text>
-        <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
-          {page.score}
-        </Text>
+        {/* One line per piece, each with a music note; a location with no score just says so. */}
+        {page.score.split(', ').map((piece) => (
+          <Text
+            key={piece}
+            style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
+            {page.score === NO_SCORE ? piece : `♪ ${piece}`}
+          </Text>
+        ))}
       </View>
       <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
         {number}
@@ -928,26 +936,25 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
   );
 }
 
-// Left page of a character: their bust at the top, framed like the location photos, then their
-// name, race, and title.
+// Left page of a character: their sketch at the top, drawn straight onto the page like a
+// sketchbook, then their name, race, and title.
 function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number: number; pageWidth: number }) {
   const character = lookUpCharacter(id);
-  const tape = { width: pageWidth * 0.16, height: pageWidth * 0.045 };
   return (
     <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
-      <View style={styles.print}>
-        <Bust id={id} />
-        <View style={[styles.tape, tape, { left: -tape.width * 0.3, transform: [{ rotate: '-35deg' }] }]} />
-        <View style={[styles.tape, tape, { right: -tape.width * 0.3, transform: [{ rotate: '35deg' }] }]} />
-      </View>
+      <Bust id={id} />
       <Text style={[styles.pageTitle, { fontSize: pageWidth * 0.085, marginTop: pageWidth * 0.06 }]}>
         {character.name}
       </Text>
       <Text style={[styles.lotrName, { fontSize: pageWidth * 0.05, marginTop: pageWidth * 0.015 }]}>
         {character.race}
       </Text>
-      <View style={styles.rule} />
-      <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{character.title}</Text>
+      {character.title && (
+        <>
+          <View style={styles.rule} />
+          <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{character.title}</Text>
+        </>
+      )}
       <View style={styles.pushDown} />
       <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
         {number}
@@ -979,6 +986,18 @@ function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOp
       <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.06 }]}>
         {character.about}
       </Text>
+
+      {[
+        { label: 'Home', value: character.home },
+        { label: 'Items', value: character.items },
+      ].map(({ label, value }) => (
+        <View key={label} style={{ marginTop: pageWidth * 0.05 }}>
+          <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>{label}</Text>
+          <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
+            {value}
+          </Text>
+        </View>
+      ))}
 
       <View style={[styles.score, { paddingTop: pageWidth * 0.03 }]}>
         <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Appears In</Text>
@@ -1204,8 +1223,7 @@ const styles = StyleSheet.create({
     color: INK,
     opacity: 0.8,
     textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    letterSpacing: 0.3,
   },
   links: {
     flexDirection: 'row',

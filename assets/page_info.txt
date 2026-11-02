@@ -2,7 +2,7 @@ Location:
 Bennington (Hobbiton)
 
 Characters:
-Bilbo, Frodo, Samwise, Marry, Pippin, 
+Bilbo, Frodo, Samwise, Merry, Pippin, 
 
 Events:
 Bilbo’s 111th birthday, Frodo inherits Bag End and the Golden Ring, Gandalf tells Frodo he must leave the Shire.
@@ -30,7 +30,7 @@ Location:
 Wheatfields (Edge of The Shire)
 
 Characters:
-Frodo, Samwise, Marry, Pippin
+Frodo, Samwise, Merry, Pippin
 
 Events:
 The hobbits leave The Shire for the first time.
@@ -44,7 +44,7 @@ Location:
 The Prancing Taco (The Prancing Pony, Bree)
 
 Characters:
-Frodo, Samwise, Marry, Pippin, Aragorn
+Frodo, Samwise, Merry, Pippin, Aragorn
 
 Events:
 The hobbits meet Aragorn and are hunted by Nazgul.
@@ -58,7 +58,7 @@ Location:
 Wallulatop (Weathertop)
 
 Characters:
-Frodo, Samwise, Marry, Pippin, Aragorn, Nazgul
+Frodo, Samwise, Merry, Pippin, Aragorn, Nazgul
 
 Events:
 The hobbits camp on Weathertop and are attacked by the Nazgul, Frodo is stabbed by a Morgul-knife.

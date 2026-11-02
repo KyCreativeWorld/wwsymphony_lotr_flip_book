@@ -1,0 +1,101 @@
+Character: Frodo Baggins
+Title: Ring-bearer
+Race: Hobbit
+Home: The Shire
+Items: The One Ring, Sting
+Basic Description: An unusually adventurous hobbit tasked with the impossible: to take the One Ring to Mount Doom, the only place where it can be destroyed.
+
+
+
+
+Character: Samwise Gamgee
+Title: Gardener
+Race: Hobbit
+Home: The Shire
+Items: Potatoes, Soil from Galadriel’s garden and a Mallorn seed
+Basic Description: A loyal hobbit who is initially Frodo’s gardener before he joins and helps Frodo through his journey to Mount Doom to destroy the One Ring.
+
+
+
+Character: Meriadoc “Merry” Brandybuck
+Race: Hobbit
+Home: The Shire
+Items: Ent-draught, Barrow Blade
+Basic Description: A dependable hobbit who, because of being cousins and friends with the Ring-bearer Frodo Baggins, joins the fellowship with his best friend and cousin Pippin.
+
+
+
+Character: Peregrin “Pippin” Took
+Race: Hobbit
+Home: The Shire
+Items: Ent-draught, Barrow Blade
+Basic Description: An impulsive, but loyal hobbit who, because of being cousins and friends with the Ring-bearer Frodo Baggins, joins the fellowship with his best friend and cousin Merry.
+
+
+Character: Gandalf the Grey
+Title: Grey Wizard
+Race: Maia
+Home: Valinor
+Items: Wizard Staff, fireworks, Glamdring
+Basic Description: The most loyal of the five Wizards sent to Middle-earth, Gandalf discovered that Bilbo and later Frodo possesses the One Ring and initiates the forming of the Fellowship of the Ring.
+
+
+
+Character: Aragorn, son of Arathorn
+Title: Isildur’s Heir
+Race: Human
+Home: Rivendell
+Items: The Shards of Narsil, Evenstar
+Basic Description: The Heir of Isildur, a Ranger of the North, and the rightful heir of Gondor, Aragorn joins the Fellowship of the Ring to help Frodo destroy the One Ring and fiercely fights against the forces of Sauron.
+
+
+
+Character: Sauron
+Title: The Dark Lord
+Race: Maia
+Home: Mordor
+Items: The One Ring
+Basic Description: The Dark Lord, maker of the One Ring.
+
+
+
+Character: Legolas Greenleaf
+Title: Prince of the Woodland Realm
+Race: Elf
+Home: Woodland Realm, Mirkwood
+Items: Elven Bow, long white knife
+Basic Description: A Woodland Elf who forms an unlikely (because of the ancient quarrel between Elves and Dwarves) friendship with Dwarf Gimli and joins the Fellowship of the Ring as a representative of the Elves.
+
+
+
+Character: Gimli, son of Glóin
+Race: Dwarf
+Home: Ered Luin
+Items: Axe
+Basic Description: A Dwarf of the House of Durin who forms an unlikely (because of the ancient quarrel between Elves and Dwarves) friendship with Elf Legolas and joins the Fellowship of the Ring as a representative of the Dwarves.
+
+
+
+Character: Gollum (Sméagol)
+Race: Hobbit
+Home: Misty Mountains
+Items: The One Ring
+Basic Description: A Hobbit corrupted by the One Ring, whose only goal after Bilbo took the Ring is to get the precious Ring back into his possession.
+
+
+
+Character: Boromir
+Title: Captain of the White Tower
+Race: Human
+Home: Gondor
+Items: Great Horn
+Basic Description: A renowned warrior and the heir to the Stewardship of Gondor, the first line of defense against Mordor, who joins the Fellowship of the Ring as a representative of Gondor.
+
+
+
+Character: Saruman the White
+Title: White Wizard, head of the White Council
+Race: Maia
+Home: Isengard
+Items: Wizard Staff, Palantir
+Basic Description: The first wizard to be sent to Middle-earth and the head of the White Council, Saruman rules Isengard and studies the movements of Sauron.

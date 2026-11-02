@@ -32,9 +32,9 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Bennington Lake',
     description:
       'The quiet, green heart of the Shire. Bilbo celebrates his 111th birthday, Frodo inherits Bag End and the Golden Ring, and Gandalf tells Frodo he must leave the Shire.',
-    characters: ['bilbo', 'frodo', 'samwise', 'merry', 'pippin'],
+    characters: ['frodo', 'samwise', 'merry', 'pippin'],
     score: 'Concerning Hobbits',
-    photo: { image: require('@/assets/images/images/WW Shire.png') },
+    photo: { image: require('@/assets/images/locations/WW Shire.png') },
     mapMarker: { label: 'Bennington', ...spot(414, 388) },
   },
   {
@@ -51,7 +51,7 @@ export const LOCATIONS: BookPage[] = [
   {
     location: 'Wheatfields',
     lotrLocation: 'Edge of The Shire',
-    wallaWallaName: 'The wheat fields outside town',
+    wallaWallaName: 'Walla Walla Wheat Fields',
     description:
       'Open fields at the edge of the Shire, where the hobbits leave The Shire for the first time.',
     characters: ['frodo', 'samwise', 'merry', 'pippin'],
@@ -64,9 +64,9 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Taco Bell',
     description:
       'The inn at Bree, where travellers stop for a meal on the road. The hobbits meet Aragorn here and are hunted by Nazgul.',
-    characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn', 'nazgul'],
+    characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn'],
     score: 'Not featured',
-    photo: { image: require('@/assets/images/images/WW The Prancing Pony.png') },
+    photo: { image: require('@/assets/images/locations/WW The Prancing Pony.png') },
     mapMarker: { label: 'The Prancing Taco', ...spot(639, 210) },
   },
   {
@@ -76,7 +76,7 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Wallula Gap',
     description:
       'A lonely hilltop on the road east. The hobbits camp on Weathertop and are attacked by the Nazgul, and Frodo is stabbed by a Morgul-knife.',
-    characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn', 'nazgul'],
+    characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn'],
     score: 'A Knife in the Dark',
     mapMarker: { label: 'Wallulatop', ...spot(700, 386) },
   },
@@ -87,19 +87,9 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Whitman College',
     description:
       'The Last Homely House east of the Sea. Frodo wakes after being healed of his Morgul-knife wound, the Council of Elron decides the fate of the One Ring, and Bilbo retires here after his eleventy-first birthday.',
-    characters: [
-      'elrond',
-      'gandalf',
-      'aragorn',
-      'frodo',
-      'bilbo',
-      'boromir',
-      'gloin',
-      'gimli',
-      'legolas',
-    ],
+    characters: ['gandalf', 'aragorn', 'frodo', 'boromir', 'gimli', 'legolas'],
     score: 'The Fellowship Theme, Concerning Hobbits',
-    photo: { image: require('@/assets/images/images/WW Rivendell.png') },
+    photo: { image: require('@/assets/images/locations/WW Rivendell.png') },
     mapMarker: { label: 'Whitmandell', ...spot(805, 238) },
   },
   {
@@ -120,9 +110,9 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Cordiner Hall',
     description:
       'Vast, dark halls beneath the mountains. Gandalf defends the Fellowship from the Balrog on the Bridge of Khazad-dûm before falling into the abyss.',
-    characters: [...FELLOWSHIP, 'balrog'],
+    characters: FELLOWSHIP,
     score: 'The Fellowship Theme',
-    photo: { image: require('@/assets/images/images/WW Moria.png') },
+    photo: { image: require('@/assets/images/locations/WW Moria.png') },
     mapMarker: { label: 'Mines of Cordiner', ...spot(841, 456) },
   },
   {
@@ -132,7 +122,7 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Pioneer Park',
     description:
       'The golden wood of the Elves. After escaping the Mines of Moria, the Fellowship receive magical gifts from Lord Celeborn and Lady Galadriel.',
-    characters: [...FELLOWSHIP.filter((id) => id !== 'gandalf'), 'galadriel', 'celeborn'],
+    characters: FELLOWSHIP.filter((id) => id !== 'gandalf'),
     score: 'The Fellowship Theme',
     mapMarker: { label: 'Lothlorineer', ...spot(949, 432) },
   },
@@ -150,7 +140,7 @@ export const LOCATIONS: BookPage[] = [
   {
     location: 'Eye of Walla Walla',
     lotrLocation: 'Eye of Sauron',
-    wallaWallaName: 'Walla Walla VA Medical Center',
+    wallaWallaName: 'Walla Walla VA Water Tower',
     description:
       'The ever-watchful Eye above the Dark Tower. It acts as a focus on the Dark Lord’s awareness.',
     characters: ['sauron'],
