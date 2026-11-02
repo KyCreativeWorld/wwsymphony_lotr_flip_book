@@ -8,7 +8,6 @@ import { Fonts } from '@/constants/theme';
 
 const INK = '#3b2a1a';
 const FRAME = '#8a6a3a';
-const SILHOUETTE_BG = '#d9c69c';
 
 // The character's sketch drawn straight onto the page, or a placeholder silhouette until one is
 // added.
@@ -83,7 +82,7 @@ export function Portrait({ id, size, disabled, onPress }: PortraitProps) {
 const styles = StyleSheet.create({
   bust: {
     width: '100%',
-    aspectRatio: 1.2,
+    aspectRatio: 1.35,
     overflow: 'hidden',
   },
   portrait: {

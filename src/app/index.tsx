@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { type BookMap } from '@/components/book-map';
+import { Directions } from '@/components/directions';
 import { FlipBook, PAGE_ASPECT } from '@/components/flip-book';
+import { MiniMap } from '@/components/mini-map';
+import { MotionControl } from '@/components/motion-control';
 import { ThemedView } from '@/components/themed-view';
 import { LOCATIONS } from '@/constants/locations';
 import { BottomTabInset, Spacing } from '@/constants/theme';
@@ -17,7 +20,14 @@ const MAP: BookMap = {
 const CoverExtraWidth = 28;
 const CoverExtraHeight = 24;
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 export default function HomeScreen() {
+  // The book shares the screen with directions along the top and a mini map on the right.
+  const window = useWindowDimensions();
+  const sideWidth = clamp(window.width * 0.16, 140, 280);
+  const directionsSize = clamp(window.width * 0.012, 12, 18);
+
   // Measured on the client: the web build is pre-rendered without knowing the window size.
   const [area, setArea] = useState<{ width: number; height: number } | null>(null);
   const onLayout = (event: LayoutChangeEvent) => {
@@ -38,10 +48,19 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.bookArea} onLayout={onLayout}>
-          {pageWidth !== null && <FlipBook pages={LOCATIONS} map={MAP} pageWidth={pageWidth} />}
+        <View style={styles.directions}>
+          <Directions fontSize={directionsSize} />
+        </View>
+        <View style={styles.main}>
+          <View style={styles.bookArea} onLayout={onLayout}>
+            {pageWidth !== null && <FlipBook pages={LOCATIONS} map={MAP} pageWidth={pageWidth} />}
+          </View>
+          <View style={[styles.side, { width: sideWidth }]}>
+            <MiniMap map={MAP} width={sideWidth - Spacing.four} />
+          </View>
         </View>
       </SafeAreaView>
+      <MotionControl />
     </ThemedView>
   );
 }
@@ -52,16 +71,26 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingBottom: BottomTabInset,
     paddingHorizontal: Spacing.three,
   },
+  directions: {
+    paddingTop: Spacing.three,
+  },
+  main: {
+    flex: 1,
+    flexDirection: 'row',
+  },
   bookArea: {
     flex: 1,
-    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: Spacing.three,
+  },
+  side: {
+    // Above the book, so the mini map can grow over it on hover.
+    zIndex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
 });

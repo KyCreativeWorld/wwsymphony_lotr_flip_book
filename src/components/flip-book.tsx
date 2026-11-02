@@ -17,6 +17,7 @@ import { Bust, Portrait } from '@/components/character-page';
 import { MapHalf, MapInset, type BookMap, type MapMarker, type PlacedMarker } from '@/components/book-map';
 import { lookUpCharacter, type CharacterId } from '@/constants/characters';
 import { Fonts } from '@/constants/theme';
+import { onBookCommand } from '@/motion/book-commands';
 
 const TURN_DURATION = 900;
 // Jumping more than one spread (from a map marker or the home button) turns one page with a few
@@ -291,6 +292,15 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   });
+
+  // Motion tracker swipes turn the pages, and the mini map beside the book returns to the map.
+  useEffect(() =>
+    onBookCommand((command) => {
+      if (command === 'next') turn(1);
+      else if (command === 'previous') turn(-1);
+      else riffleTo(MAP_SPREAD);
+    }),
+  );
 
   const getZIndex = (index: number) => {
     if (index === turning) return leaves.length + 1;
@@ -847,8 +857,8 @@ type LocationPageProps = {
 function LocationPhotoPage({ page, map, number, pageWidth }: LocationPageProps & { map: BookMap }) {
   const tape = { width: pageWidth * 0.16, height: pageWidth * 0.045 };
   const printWidth = pageWidth * 0.8;
-  // Long names get smaller type so they fit in two lines.
-  const titleSize = pageWidth * (page.location.length > 20 ? 0.062 : 0.085);
+  // Longer names get smaller type, so they fit in two lines of the wide Cinzel capitals.
+  const titleSize = pageWidth * (page.location.length > 20 ? 0.055 : page.location.length > 12 ? 0.062 : 0.075);
   return (
     <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
       <View style={styles.print}>
@@ -864,7 +874,7 @@ function LocationPhotoPage({ page, map, number, pageWidth }: LocationPageProps &
             map={map}
             marker={page.mapMarker}
             width={printWidth - 12}
-            height={(printWidth - 12) / 1.2}
+            height={(printWidth - 12) / 1.35}
             zoom={3}
             bare
           />
@@ -872,10 +882,10 @@ function LocationPhotoPage({ page, map, number, pageWidth }: LocationPageProps &
         <View style={[styles.tape, tape, { left: -tape.width * 0.3, transform: [{ rotate: '-35deg' }] }]} />
         <View style={[styles.tape, tape, { right: -tape.width * 0.3, transform: [{ rotate: '35deg' }] }]} />
       </View>
-      <Text style={[styles.pageTitle, { fontSize: titleSize, marginTop: pageWidth * 0.06 }]}>
+      <Text style={[styles.pageTitle, { fontSize: titleSize, marginTop: pageWidth * 0.045 }]}>
         {page.location}
       </Text>
-      <Text style={[styles.lotrName, { fontSize: pageWidth * 0.05, marginTop: pageWidth * 0.015 }]}>
+      <Text style={[styles.lotrName, { fontSize: pageWidth * 0.044, marginTop: pageWidth * 0.015 }]}>
         {page.lotrLocation}
         {page.lotrAltName && <Text style={styles.altName}> ({page.lotrAltName})</Text>}
       </Text>
@@ -898,7 +908,7 @@ type LocationTextPageProps = LocationPageProps & {
 // Right page of a location: a short description at the top, the characters as round portraits
 // running left to right like lines of text, and the score at the bottom.
 function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacter }: LocationTextPageProps) {
-  const portraitSize = pageWidth * 0.115;
+  const portraitSize = pageWidth * 0.1;
   return (
     <View
       style={[
@@ -943,7 +953,7 @@ function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number:
   return (
     <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
       <Bust id={id} />
-      <Text style={[styles.pageTitle, { fontSize: pageWidth * 0.085, marginTop: pageWidth * 0.06 }]}>
+      <Text style={[styles.pageTitle, { fontSize: pageWidth * 0.072, marginTop: pageWidth * 0.05 }]}>
         {character.name}
       </Text>
       <Text style={[styles.lotrName, { fontSize: pageWidth * 0.05, marginTop: pageWidth * 0.015 }]}>
@@ -1200,7 +1210,7 @@ const styles = StyleSheet.create({
   },
   photo: {
     width: '100%',
-    aspectRatio: 1.2,
+    aspectRatio: 1.35,
   },
   tape: {
     position: 'absolute',

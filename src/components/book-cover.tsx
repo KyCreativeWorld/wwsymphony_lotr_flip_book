@@ -27,7 +27,7 @@ const ENDPAPER = '#d9c69c';
 const SERIF = Platform.select({
   ios: 'Georgia',
   android: 'serif',
-  default: 'Georgia, "Times New Roman", serif',
+  default: 'Cinzel, Georgia, "Times New Roman", serif',
 });
 
 type Side = 'left' | 'right';

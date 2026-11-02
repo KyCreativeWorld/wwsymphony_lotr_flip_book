@@ -1,0 +1,143 @@
+// Gets tracker readings into the browser, one text line at a time. Two ways in:
+//
+// - WebSocket: a bridge program on this computer reads the tracker and forwards each reading
+//   (see tools/tracker-bridge/). Works with any tracker and any browser.
+// - USB serial: the browser reads a serial tracker directly through the Web Serial API
+//   (Chrome and Edge only).
+//
+// Both hand lines to the same parser, so the rest of the app doesn't care which is used.
+
+export type ConnectionKind = 'websocket' | 'serial';
+
+export type ConnectionStatus =
+  | { state: 'disconnected' }
+  | { state: 'connecting'; kind: ConnectionKind }
+  | { state: 'connected'; kind: ConnectionKind }
+  | { state: 'error'; kind: ConnectionKind; message: string };
+
+export type TrackerConnection = { close: () => void };
+
+type Handlers = {
+  onLine: (line: string) => void;
+  onStatus: (status: ConnectionStatus) => void;
+};
+
+// How long to wait before trying the bridge again after it drops or isn't running yet.
+const RECONNECT_DELAY = 2000;
+
+// Connects to a bridge at `url`, retrying until closed, so the book picks the tracker back up
+// whenever the bridge restarts.
+export function connectWebSocket(url: string, { onLine, onStatus }: Handlers): TrackerConnection {
+  let socket: WebSocket | null = null;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+  let closed = false;
+
+  const open = () => {
+    onStatus({ state: 'connecting', kind: 'websocket' });
+    try {
+      socket = new WebSocket(url);
+    } catch (error) {
+      onStatus({ state: 'error', kind: 'websocket', message: String(error) });
+      return;
+    }
+    socket.onopen = () => onStatus({ state: 'connected', kind: 'websocket' });
+    socket.onmessage = (event) => {
+      if (typeof event.data !== 'string') return;
+      // A message can hold one reading or several, separated by newlines.
+      event.data.split(/\r?\n/).forEach(onLine);
+    };
+    socket.onclose = () => {
+      if (closed) return;
+      onStatus({
+        state: 'error',
+        kind: 'websocket',
+        message: `Can't reach the bridge at ${url}. Retrying…`,
+      });
+      retry = setTimeout(open, RECONNECT_DELAY);
+    };
+  };
+  open();
+
+  return {
+    close: () => {
+      closed = true;
+      clearTimeout(retry);
+      socket?.close();
+      onStatus({ state: 'disconnected' });
+    },
+  };
+}
+
+// The parts of the Web Serial API used here. TypeScript's DOM types don't include it yet.
+type SerialPort = {
+  open: (options: { baudRate: number }) => Promise<void>;
+  close: () => Promise<void>;
+  readable: ReadableStream<BufferSource> | null;
+};
+type Serial = {
+  requestPort: () => Promise<SerialPort>;
+  getPorts: () => Promise<SerialPort[]>;
+};
+const serial = () =>
+  (typeof navigator !== 'undefined' ? (navigator as Navigator & { serial?: Serial }).serial : undefined);
+
+export const serialSupported = () => serial() !== undefined;
+
+// Opens a serial tracker. With `pickPort`, the browser asks which port to use (this needs a
+// click); otherwise it reopens a port the user already picked on an earlier visit, if any.
+export async function connectSerial(
+  baudRate: number,
+  pickPort: boolean,
+  { onLine, onStatus }: Handlers,
+): Promise<TrackerConnection | null> {
+  const api = serial();
+  if (!api) return null;
+  let port: SerialPort | undefined;
+  try {
+    port = pickPort ? await api.requestPort() : (await api.getPorts())[0];
+  } catch {
+    // The user closed the port picker.
+    return null;
+  }
+  if (!port) return null;
+
+  onStatus({ state: 'connecting', kind: 'serial' });
+  let closed = false;
+  let reader: ReadableStreamDefaultReader<string> | undefined;
+  try {
+    await port.open({ baudRate });
+  } catch (error) {
+    onStatus({ state: 'error', kind: 'serial', message: `Couldn't open the port: ${String(error)}` });
+    return null;
+  }
+  onStatus({ state: 'connected', kind: 'serial' });
+
+  const read = async () => {
+    let partial = '';
+    try {
+      reader = port.readable!.pipeThrough(new TextDecoderStream()).getReader();
+      while (!closed) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const lines = (partial + value).split(/\r?\n/);
+        // The last piece may be the start of a line still on its way.
+        partial = lines.pop() ?? '';
+        lines.forEach(onLine);
+      }
+    } catch (error) {
+      if (!closed) onStatus({ state: 'error', kind: 'serial', message: `Lost the tracker: ${String(error)}` });
+    }
+  };
+  read();
+
+  return {
+    close: () => {
+      closed = true;
+      reader
+        ?.cancel()
+        .catch(() => {})
+        .finally(() => port.close().catch(() => {}));
+      onStatus({ state: 'disconnected' });
+    },
+  };
+}
