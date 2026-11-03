@@ -1,22 +1,16 @@
 <!doctype html>
 <html>
 	<head>
-		<title>Move Prop to Change Background Color</title>
+		<title>Motion Tracker Test</title>
 	</head>
-	
-	<body>	
-		<div>
-			<button type="button" id="BUTTON_X">X-Axis</button>
-			<button type="button" id="BUTTON_Y">Y-Axis</button>
-			<button type="button" id="BUTTON_Z">Z-Axis</button>
-		</div>
-		<div>
-		  <canvas id="myCanvas" width="600" height="600"></canvas>
-		</div>
-		
-    <script src="js/kinectron.js"></script>	
-    <script src="js/LiveMotion.js"></script>	
-    <script src="js/ClientApp.js"></script>		
-		
+
+	<body>
+		<p id="STATUS">Not connected.</p>
+		<p id="RATE">0 readings/s</p>
+		<pre id="PROP">Waiting for a tracked prop…</pre>
+
+    <script src="js/LiveMotion.js"></script>
+    <script src="js/ClientApp.js"></script>
+
 	</body>
 </html>

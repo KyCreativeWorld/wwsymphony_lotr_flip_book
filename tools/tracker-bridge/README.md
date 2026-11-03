@@ -14,7 +14,13 @@ The flip book can be driven by a handheld electromagnetic tracker (Polhemus, tra
 
 Open the book in Chrome or Edge and press **T**, or click the small dot in the bottom-right corner, to open the tracker panel. The dot turns green once readings are flowing.
 
-There are two ways to connect.
+There are three ways to connect.
+
+**The LiveMotion server.** If the class's LiveMotion motion server is tracking the object, click **Connect** next to "LiveMotion server" in the panel. The default address is `ws://localhost:8080`. No bridge is needed. The book follows the first tracked prop: its `pos` gives the position, and its rotation (a quaternion `{x, y, z, w}`, or `azimuth`/`elevation`/`roll` angles) gives where it points.
+
+To check the server on its own, open `motioncapture/motioncapture.html` in a browser. It shows the connection, the readings per second, and the latest prop exactly as the server sends it. If the panel shows a position but no `angles`, the server's rotation field has a name the book doesn't recognise yet. In that case, send a copy of what the test page shows.
+
+LiveMotion may use different units from the tracker's own software, for example metres instead of inches. Set `TRACKER_DISTANCE` and `SCREEN_WIDTH` in `src/motion/setup.ts` in the same units the panel's `position` shows.
 
 **Option A: the bridge.** This works with any tracker and any browser. Run the tracker's own program so it prints one reading per line, and pipe its output into the bridge:
 

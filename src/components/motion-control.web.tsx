@@ -11,6 +11,7 @@ import {
   type CalibrationStep,
 } from '@/motion/calibration';
 import { clickableAt, sendClick, sendHover } from '@/motion/dwell-click';
+import { LIVE_MOTION_DEFAULT_URL } from '@/motion/live-motion';
 import { TRACKER_DISTANCE } from '@/motion/setup';
 import { SwipeDetector, type Gesture } from '@/motion/swipe-detector';
 import {
@@ -49,6 +50,14 @@ const CALIBRATION_COUNTDOWN = 3;
 const CALIBRATION_AVERAGE = 500;
 
 const DEFAULT_BRIDGE_URL = 'ws://localhost:8787';
+
+// What to check when a connection is open but no readings arrive.
+const NO_READINGS_HINTS: Record<ConnectionKind, string> = {
+  livemotion: 'Connected, but no readings: is the LiveMotion server tracking a prop?',
+  websocket:
+    "Connected, but no readings: is the tracker's program piped into the bridge, and is it printing readings?",
+  serial: 'Connected, but no readings: check the baud rate, and that the tracker is set to send ASCII readings.',
+};
 const DEFAULT_BAUD_RATE = 115200;
 const STORAGE_KEY = 'motion-tracker';
 
@@ -58,6 +67,7 @@ const COMMANDS: Record<Gesture, { command: BookCommand; label: string }> = {
 };
 
 type Settings = {
+  liveMotionUrl: string;
   bridgeUrl: string;
   baudRate: number;
   // How the tracker was last connected, to reconnect the same way on the next visit.
@@ -66,7 +76,11 @@ type Settings = {
 };
 
 function loadSettings(): Settings {
-  const defaults: Settings = { bridgeUrl: DEFAULT_BRIDGE_URL, baudRate: DEFAULT_BAUD_RATE };
+  const defaults: Settings = {
+    liveMotionUrl: LIVE_MOTION_DEFAULT_URL,
+    bridgeUrl: DEFAULT_BRIDGE_URL,
+    baudRate: DEFAULT_BAUD_RATE,
+  };
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const settings: Settings = saved ? { ...defaults, ...(JSON.parse(saved) as Partial<Settings>) } : defaults;
@@ -191,6 +205,12 @@ export function MotionControl() {
     updateSettings({ bridgeUrl: url, lastConnection: 'websocket' });
   };
 
+  const connectLiveMotion = (url: string) => {
+    disconnect();
+    connection.current = connectWebSocket(url, { onLine, onStatus: setStatus }, 'livemotion');
+    updateSettings({ liveMotionUrl: url, lastConnection: 'livemotion' });
+  };
+
   const connectSerialPort = async (baudRate: number, pickPort: boolean) => {
     disconnect();
     const opened = await connectSerial(baudRate, pickPort, { onLine, onStatus: setStatus });
@@ -202,7 +222,9 @@ export function MotionControl() {
   // Reconnect the way the tracker was connected last time.
   useEffect(() => {
     const saved = loadSettings();
-    if (saved.lastConnection === 'websocket') {
+    if (saved.lastConnection === 'livemotion') {
+      connection.current = connectWebSocket(saved.liveMotionUrl, { onLine, onStatus: setStatus }, 'livemotion');
+    } else if (saved.lastConnection === 'websocket') {
       connection.current = connectWebSocket(saved.bridgeUrl, { onLine, onStatus: setStatus });
     } else if (saved.lastConnection === 'serial') {
       connectSerial(saved.baudRate, false, { onLine, onStatus: setStatus }).then((opened) => {
@@ -423,6 +445,18 @@ export function MotionControl() {
           <div style={styles.panelTitle}>Motion tracker</div>
           <div style={styles.statusLine}>{describeStatus(status)}</div>
 
+          <label style={styles.label}>LiveMotion server</label>
+          <div style={styles.row}>
+            <input
+              style={styles.input}
+              value={settings.liveMotionUrl}
+              onChange={(event) => updateSettings({ liveMotionUrl: event.target.value })}
+            />
+            <button style={styles.button} onClick={() => connectLiveMotion(settings.liveMotionUrl)}>
+              Connect
+            </button>
+          </div>
+
           <label style={styles.label}>Bridge (WebSocket)</label>
           <div style={styles.row}>
             <input
@@ -473,9 +507,7 @@ export function MotionControl() {
             {status.state === 'connected' && readout.rate === 0 && (
               <>
                 <br />
-                {status.kind === 'websocket'
-                  ? "Connected, but no readings: is the tracker's program piped into the bridge, and is it printing readings?"
-                  : 'Connected, but no readings: check the baud rate, and that the tracker is set to send ASCII readings.'}
+                {NO_READINGS_HINTS[status.kind]}
               </>
             )}
             {readout.sample && (
@@ -514,7 +546,8 @@ function statusColor(status: ConnectionStatus) {
 }
 
 function describeStatus(status: ConnectionStatus) {
-  const via = (kind: ConnectionKind) => (kind === 'websocket' ? 'the bridge' : 'USB serial');
+  const via = (kind: ConnectionKind) =>
+    ({ livemotion: 'the LiveMotion server', websocket: 'the bridge', serial: 'USB serial' })[kind];
   switch (status.state) {
     case 'disconnected':
       return 'Not connected.';

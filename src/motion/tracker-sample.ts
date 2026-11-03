@@ -1,3 +1,5 @@
+import { liveMotionSample } from '@/motion/live-motion';
+
 // One reading from the electromagnetic tracker: where the object is, and which way it points.
 // Units don't matter (inches, cm, whatever the tracker is set to), because calibration maps
 // everything onto the screen.
@@ -27,7 +29,8 @@ const allFinite = (values: number[]) => values.every(Number.isFinite);
 //
 //   JSON, for a custom bridge:
 //     {"x": 1.2, "y": 3.4, "z": 5.6, "azimuth": 10, "elevation": -4, "roll": 0}
-//   ("yaw" and "pitch" work in place of "azimuth" and "elevation").
+//   ("yaw" and "pitch" work in place of "azimuth" and "elevation"), or a LiveMotion server's
+//   messages ({"props": [...]}, see live-motion.ts).
 //
 // Anything else, such as a header line, returns null and is skipped.
 export function parseTrackerLine(line: string, time: number): TrackerSample | null {
@@ -37,6 +40,7 @@ export function parseTrackerLine(line: string, time: number): TrackerSample | nu
   if (text.startsWith('{')) {
     try {
       const data = JSON.parse(text) as Record<string, unknown>;
+      if ('props' in data) return liveMotionSample(data, time);
       const position = [data.x, data.y, data.z].map(toNumber);
       if (!allFinite(position)) return null;
       const orientation = [data.azimuth ?? data.yaw, data.elevation ?? data.pitch, data.roll ?? 0].map(

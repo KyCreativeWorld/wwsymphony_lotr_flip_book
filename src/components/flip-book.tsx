@@ -16,6 +16,7 @@ import { BackCover, FrontCover, InsideCover, LEATHER_DARK } from '@/components/b
 import { Bust, Portrait } from '@/components/character-page';
 import { MapHalf, MapInset, type BookMap, type MapMarker, type PlacedMarker } from '@/components/book-map';
 import { lookUpCharacter, type CharacterId } from '@/constants/characters';
+import { itemImage } from '@/constants/items';
 import { Fonts } from '@/constants/theme';
 import { onBookCommand } from '@/motion/book-commands';
 
@@ -946,10 +947,27 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
   );
 }
 
+// A small house drawn in ink, marking a character's home.
+function HouseIcon({ size }: { size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M3 11.5 L12 4 L21 11.5 M5.5 9.5 V20 H10 V14.5 H14 V20 H18.5 V9.5"
+        stroke={INK}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
 // Left page of a character: their sketch at the top, drawn straight onto the page like a
-// sketchbook, then their name, race, and title.
+// sketchbook, then their name, race, title, and home.
 function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number: number; pageWidth: number }) {
   const character = lookUpCharacter(id);
+  const homeSize = pageWidth * 0.038;
   return (
     <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
       <Bust id={id} />
@@ -959,12 +977,14 @@ function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number:
       <Text style={[styles.lotrName, { fontSize: pageWidth * 0.05, marginTop: pageWidth * 0.015 }]}>
         {character.race}
       </Text>
+      <View style={styles.rule} />
       {character.title && (
-        <>
-          <View style={styles.rule} />
-          <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{character.title}</Text>
-        </>
+        <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{character.title}</Text>
       )}
+      <View style={[styles.home, { gap: homeSize * 0.4, marginTop: character.title ? homeSize * 0.4 : 0 }]}>
+        <HouseIcon size={homeSize * 1.2} />
+        <Text style={[styles.homeName, { fontSize: homeSize }]}>{character.home}</Text>
+      </View>
       <View style={styles.pushDown} />
       <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
         {number}
@@ -997,17 +1017,28 @@ function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOp
         {character.about}
       </Text>
 
-      {[
-        { label: 'Home', value: character.home },
-        { label: 'Items', value: character.items },
-      ].map(({ label, value }) => (
-        <View key={label} style={{ marginTop: pageWidth * 0.05 }}>
-          <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>{label}</Text>
-          <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
-            {value}
-          </Text>
-        </View>
-      ))}
+      {/* One item per line, with its sketch beside it when there is one. */}
+      <View style={{ marginTop: pageWidth * 0.05 }}>
+        <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Items</Text>
+        {character.items.split(', ').map((item) => {
+          const image = itemImage(item);
+          return (
+            <View key={item} style={[styles.item, { gap: pageWidth * 0.02 }]}>
+              {image && (
+                <Image
+                  source={image}
+                  contentFit="contain"
+                  style={{ width: pageWidth * 0.1, height: pageWidth * 0.1 }}
+                />
+              )}
+              <Text
+                style={[styles.pageBody, styles.itemName, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
+                {item}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
 
       <View style={[styles.score, { paddingTop: pageWidth * 0.03 }]}>
         <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Appears In</Text>
@@ -1234,6 +1265,25 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     textAlign: 'center',
     letterSpacing: 0.3,
+  },
+  home: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  homeName: {
+    fontFamily: Fonts.serif,
+    color: INK,
+    opacity: 0.8,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemName: {
+    flexShrink: 1,
   },
   links: {
     flexDirection: 'row',

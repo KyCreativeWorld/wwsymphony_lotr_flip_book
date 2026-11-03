@@ -6,8 +6,7 @@ import { type CharacterId } from '@/constants/characters';
 // book.
 //
 // Marker spots are fractions of the map's width and height, written as the pixel position on the
-// 1800 × 1200 map image. Each sits in clear space next to its place, so pins don't cover the
-// map's lettering or drawings, and they're kept far enough apart to click easily.
+// 1800 × 1200 map image. Each sits on the red dot drawn on the map for its place.
 const MAP_WIDTH = 1800;
 const MAP_HEIGHT = 1200;
 const spot = (x: number, y: number) => ({ x: x / MAP_WIDTH, y: y / MAP_HEIGHT });
@@ -36,7 +35,7 @@ export const LOCATIONS: BookPage[] = [
     characters: ['frodo', 'samwise', 'merry', 'pippin', 'gandalf'],
     score: 'Concerning Hobbits',
     photo: { image: require('@/assets/images/locations/WW Shire.png') },
-    mapMarker: { label: 'Bennington', ...spot(414, 388) },
+    mapMarker: { label: 'Bennington', ...spot(429, 349) },
   },
   {
     location: 'Isengard Hotel and Conference Center',
@@ -47,17 +46,7 @@ export const LOCATIONS: BookPage[] = [
       'The tallest tower in town stands in for Saruman’s fortress of Orthanc. Gandalf is betrayed and imprisoned here by Saruman.',
     characters: ['saruman', 'gandalf'],
     score: 'A Knife in the Dark',
-    mapMarker: { label: 'Isengard Hotel and Conference Center', ...spot(712, 690) },
-  },
-  {
-    location: 'Wheatfields',
-    lotrLocation: 'Edge of The Shire',
-    wallaWallaName: 'Walla Walla Wheat Fields',
-    description:
-      'Open fields at the edge of the Shire, where the hobbits leave The Shire for the first time.',
-    characters: ['frodo', 'samwise', 'merry', 'pippin'],
-    score: 'Shortcuts to Mushrooms',
-    mapMarker: { label: 'Wheatfields', ...spot(599, 441) },
+    mapMarker: { label: 'Isengard Hotel and Conference Center', ...spot(840, 683) },
   },
   {
     location: 'The Prancing Taco',
@@ -68,7 +57,7 @@ export const LOCATIONS: BookPage[] = [
     characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn'],
     score: 'Not featured',
     photo: { image: require('@/assets/images/locations/WW The Prancing Pony.png') },
-    mapMarker: { label: 'The Prancing Taco', ...spot(639, 210) },
+    mapMarker: { label: 'The Prancing Taco', ...spot(635, 236) },
   },
   {
     location: 'Wallula Top',
@@ -79,7 +68,7 @@ export const LOCATIONS: BookPage[] = [
       'A lonely hilltop on the road east. The hobbits camp on Weathertop and are attacked by the Nazgul, and Frodo is stabbed by a Morgul-knife.',
     characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn'],
     score: 'A Knife in the Dark',
-    mapMarker: { label: 'Wallula Top', ...spot(700, 386) },
+    mapMarker: { label: 'Wallula Top', ...spot(730, 351) },
   },
   {
     location: 'Whitmandell',
@@ -91,7 +80,7 @@ export const LOCATIONS: BookPage[] = [
     characters: ['gandalf', 'aragorn', 'frodo', 'boromir', 'gimli', 'legolas', 'samwise', 'merry', 'pippin'],
     score: 'The Fellowship Theme, Concerning Hobbits',
     photo: { image: require('@/assets/images/locations/WW Rivendell.png') },
-    mapMarker: { label: 'Whitmandell', ...spot(805, 238) },
+    mapMarker: { label: 'Whitmandell', ...spot(868, 301) },
   },
   {
     location: 'Blue Mountains',
@@ -102,7 +91,7 @@ export const LOCATIONS: BookPage[] = [
       'The high, snowy pass the Fellowship tries to cross. Trapped in a snow storm, they choose to travel through the Mines of Moria instead.',
     characters: FELLOWSHIP,
     score: 'The Fellowship Theme',
-    mapMarker: { label: 'Blue Mountains', ...spot(738, 488) },
+    mapMarker: { label: 'Blue Mountains', ...spot(875, 408) },
   },
   {
     location: 'Mines of Cordiner',
@@ -114,7 +103,7 @@ export const LOCATIONS: BookPage[] = [
     characters: [...FELLOWSHIP, 'gollum'],
     score: 'The Fellowship Theme',
     photo: { image: require('@/assets/images/locations/WW Moria.png') },
-    mapMarker: { label: 'Mines of Cordiner', ...spot(841, 456) },
+    mapMarker: { label: 'Mines of Cordiner', ...spot(875, 530) },
   },
   {
     location: 'Lothlorineer',
@@ -125,7 +114,7 @@ export const LOCATIONS: BookPage[] = [
       'The golden wood of the Elves. After escaping the Mines of Moria, the Fellowship receive magical gifts from Lord Celeborn and Lady Galadriel.',
     characters: FELLOWSHIP.filter((id) => id !== 'gandalf'),
     score: 'The Fellowship Theme',
-    mapMarker: { label: 'Lothlorineer', ...spot(949, 432) },
+    mapMarker: { label: 'Lothlorineer', ...spot(950, 482) },
   },
   {
     location: 'Anduin Creek',
@@ -136,7 +125,7 @@ export const LOCATIONS: BookPage[] = [
       'The Great River the Fellowship follows south by boat. Driven by the Ring’s influence, Boromir tries to take the Ring from Frodo.',
     characters: [...FELLOWSHIP.filter((id) => id !== 'gandalf'), 'gollum'],
     score: 'Argonath',
-    mapMarker: { label: 'Anduin Creek', ...spot(1004, 636) },
+    mapMarker: { label: 'Anduin Creek', ...spot(1056, 614) },
   },
   {
     location: 'Eye of Walla Walla',
@@ -146,6 +135,6 @@ export const LOCATIONS: BookPage[] = [
       'The ever-watchful Eye above the Dark Tower. It acts as a focus on the Dark Lord’s awareness.',
     characters: ['sauron'],
     score: 'Not featured',
-    mapMarker: { label: 'Eye of Walla Walla', ...spot(1325, 660) },
+    mapMarker: { label: 'Eye of Walla Walla', ...spot(1315, 836) },
   },
 ];
