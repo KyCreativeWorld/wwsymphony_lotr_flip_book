@@ -947,22 +947,6 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
   );
 }
 
-// A small house drawn in ink, marking a character's home.
-function HouseIcon({ size }: { size: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M3 11.5 L12 4 L21 11.5 M5.5 9.5 V20 H10 V14.5 H14 V20 H18.5 V9.5"
-        stroke={INK}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </Svg>
-  );
-}
-
 // Left page of a character: their sketch at the top, drawn straight onto the page like a
 // sketchbook, then their name, race, title, and home.
 function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number: number; pageWidth: number }) {
@@ -981,10 +965,9 @@ function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number:
       {character.title && (
         <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{character.title}</Text>
       )}
-      <View style={[styles.home, { gap: homeSize * 0.4, marginTop: character.title ? homeSize * 0.4 : 0 }]}>
-        <HouseIcon size={homeSize * 1.2} />
-        <Text style={[styles.homeName, { fontSize: homeSize }]}>{character.home}</Text>
-      </View>
+      <Text style={[styles.homeName, { fontSize: homeSize, marginTop: character.title ? homeSize * 0.4 : 0 }]}>
+        Home: {character.home}
+      </Text>
       <View style={styles.pushDown} />
       <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
         {number}
@@ -1028,7 +1011,7 @@ function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOp
                 <Image
                   source={image}
                   contentFit="contain"
-                  style={{ width: pageWidth * 0.1, height: pageWidth * 0.1 }}
+                  style={{ width: pageWidth * 0.18, height: pageWidth * 0.18 }}
                 />
               )}
               <Text
@@ -1266,17 +1249,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
   },
-  home: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   homeName: {
     fontFamily: Fonts.serif,
     color: INK,
     opacity: 0.8,
     textAlign: 'center',
-    flexShrink: 1,
   },
   item: {
     flexDirection: 'row',
