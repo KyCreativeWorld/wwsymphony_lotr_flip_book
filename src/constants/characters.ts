@@ -23,7 +23,7 @@ export type Character = {
 //
 // Busts are line drawings in assets/images/characters/. A character without one shows a
 // placeholder silhouette until it's added, e.g.
-//   image: require('@/assets/images/characters/Legolas.png'),
+//   image: require('@/assets/images/characters/Gimli.png'),
 export const CHARACTERS = {
   frodo: {
     image: require('@/assets/images/characters/Frodo.png'),
@@ -31,7 +31,7 @@ export const CHARACTERS = {
     shortName: 'Frodo',
     race: 'Hobbit',
     title: 'Ring-bearer',
-    home: 'Bag End, Hobbiton (The Shire)',
+    home: 'The Shire',
     items: 'The One Ring, Sting',
     about:
       'An unusually adventurous hobbit tasked with the impossible: to take the One Ring to Mount Doom, the only place where it can be destroyed.',
@@ -42,17 +42,17 @@ export const CHARACTERS = {
     shortName: 'Samwise',
     race: 'Hobbit',
     title: 'Gardener',
-    home: 'Bagshot Row, Hobbiton (The Shire)',
+    home: 'The Shire',
     items: 'Potatoes, Soil from Galadriel’s garden and a Mallorn seed',
     about:
-      'A loyal hobbit who, initially Frodo’s gardener, joins and helps Frodo through his journey to Mount Doom to destroy the One Ring.',
+      'A loyal hobbit who is initially Frodo’s gardener before he joins and helps Frodo through his journey to Mount Doom to destroy the One Ring.',
   },
   merry: {
     image: require('@/assets/images/characters/Merry.png'),
     name: 'Meriadoc “Merry” Brandybuck',
     shortName: 'Merry',
     race: 'Hobbit',
-    home: 'Brandy Hall, Buckland',
+    home: 'The Shire',
     items: 'Ent-draught, Barrow Blade',
     about:
       'A dependable hobbit who, because of being cousins and friends with the Ring-bearer Frodo Baggins, joins the fellowship with his best friend and cousin Pippin.',
@@ -74,9 +74,9 @@ export const CHARACTERS = {
     race: 'Maia',
     title: 'Grey Wizard',
     home: 'Valinor',
-    items: 'Wizard Staff (he had one as Gandalf the Grey and one as Gandalf the White), fireworks, Glamdring',
+    items: 'Wizard Staff, fireworks, Glamdring',
     about:
-      'The most loyal of the five Wizards sent to Middle-earth, Gandalf discovered that Bilbo and later Frodo possessed the One Ring and initiated the forming of the Fellowship of the Ring.',
+      'The most loyal of the five Wizards sent to Middle-earth, Gandalf discovers that Bilbo and later Frodo possesses the One Ring and initiates the forming of the Fellowship of the Ring.',
   },
   aragorn: {
     image: require('@/assets/images/characters/Aragorn.png'),
@@ -90,6 +90,7 @@ export const CHARACTERS = {
       'The Heir of Isildur, a Ranger of the North, and the rightful heir of Gondor, Aragorn joins the Fellowship of the Ring to help Frodo destroy the One Ring and fiercely fights against the forces of Sauron.',
   },
   sauron: {
+    image: require('@/assets/images/characters/Sauron.png'),
     name: 'Sauron',
     shortName: 'Sauron',
     race: 'Maia',
@@ -99,32 +100,41 @@ export const CHARACTERS = {
     about: 'The Dark Lord, maker of the One Ring.',
   },
   legolas: {
+    image: require('@/assets/images/characters/Legolas.png'),
     name: 'Legolas Greenleaf',
     shortName: 'Legolas',
     race: 'Elf',
     title: 'Prince of the Woodland Realm',
     home: 'Woodland Realm, Mirkwood',
-    items: 'Elven Bow, long white knife (one in the books, two in the movies)',
+    items: 'Elven Bow, long white knife',
     about:
-      'A Woodland Elf who forms an unlikely, because of the ancient quarrel between Elves and Dwarves, friendship with Dwarf Gimli and joins the Fellowship of the Ring as a representative of the Elves.',
+      'A Woodland Elf who forms an unlikely (because of the ancient quarrel between Elves and Dwarves) friendship with Dwarf Gimli and joins the Fellowship of the Ring as a representative of the Elves.',
   },
   gimli: {
     name: 'Gimli, son of Glóin',
     shortName: 'Gimli',
     race: 'Dwarf',
-    home: 'Erebor, Blue Mountains',
-    items:
-      'Axe (one in the books). Movies: A "bearded" axe, Two throwing axes, A battle axe, Double-bladed axe',
+    home: 'Ered Luin',
+    items: 'Axe',
     about:
-      'A Dwarf of the House of Durin who forms an unlikely, because of the ancient quarrel between Elves and Dwarves, friendship with Elf Legolas and joins the Fellowship of the Ring as a representative of the Dwarves.',
+      'A Dwarf of the House of Durin who forms an unlikely (because of the ancient quarrel between Elves and Dwarves) friendship with Elf Legolas and joins the Fellowship of the Ring as a representative of the Dwarves.',
+  },
+  gollum: {
+    name: 'Gollum (Sméagol)',
+    shortName: 'Gollum',
+    race: 'Hobbit',
+    home: 'Misty Mountains',
+    items: 'The One Ring',
+    about:
+      'A Hobbit corrupted by the One Ring, whose only goal after Bilbo took the Ring is to get the precious Ring back into his possession.',
   },
   boromir: {
     name: 'Boromir',
     shortName: 'Boromir',
     race: 'Human',
     title: 'Captain of the White Tower',
-    home: 'Minas Tirith',
-    items: 'Great Horn (aka the Horn of Boromir)',
+    home: 'Gondor',
+    items: 'Great Horn',
     about:
       'A renowned warrior and the heir to the Stewardship of Gondor, the first line of defense against Mordor, who joins the Fellowship of the Ring as a representative of Gondor.',
   },

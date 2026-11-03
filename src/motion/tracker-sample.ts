@@ -21,7 +21,9 @@ const allFinite = (values: number[]) => values.every(Number.isFinite);
 //   separated by spaces or commas:
 //     x y z azimuth elevation roll
 //     station x y z azimuth elevation roll
+//     hub sensor frame buttons x y z azimuth elevation roll   (Polhemus G4, from PiMgr)
 //     x y z
+//   Position and angles are always the last six values, so any fields in front are skipped.
 //
 //   JSON, for a custom bridge:
 //     {"x": 1.2, "y": 3.4, "z": 5.6, "azimuth": 10, "elevation": -4, "roll": 0}
@@ -50,13 +52,13 @@ export function parseTrackerLine(line: string, time: number): TrackerSample | nu
     }
   }
 
-  const numbers = text.split(/[\s,]+/).map(Number);
-  if (!allFinite(numbers)) return null;
-  // A leading station number comes first when there are seven values.
-  const values = numbers.length === 7 ? numbers.slice(1) : numbers;
-  if (values.length === 6) {
+  const fields = text.split(/[\s,]+/);
+  if (fields.length >= 6) {
+    const values = fields.slice(-6).map(Number);
+    if (!allFinite(values)) return null;
     return { position: values.slice(0, 3) as Vector, orientation: values.slice(3, 6) as Vector, time };
   }
-  if (values.length === 3) return { position: values as Vector, time };
+  const position = fields.map(Number);
+  if (position.length === 3 && allFinite(position)) return { position: position as Vector, time };
   return null;
 }

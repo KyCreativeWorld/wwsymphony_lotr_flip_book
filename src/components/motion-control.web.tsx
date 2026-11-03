@@ -470,6 +470,14 @@ export function MotionControl() {
             {settings.calibration ? 'Calibrated.' : 'Not calibrated yet: calibrate before use.'}
             <br />
             {readout.rate} readings/s
+            {status.state === 'connected' && readout.rate === 0 && (
+              <>
+                <br />
+                {status.kind === 'websocket'
+                  ? "Connected, but no readings: is the tracker's program piped into the bridge, and is it printing readings?"
+                  : 'Connected, but no readings: check the baud rate, and that the tracker is set to send ASCII readings.'}
+              </>
+            )}
             {readout.sample && (
               <>
                 <br />

@@ -7,7 +7,6 @@ import { Directions } from '@/components/directions';
 import { FlipBook, PAGE_ASPECT } from '@/components/flip-book';
 import { MiniMap } from '@/components/mini-map';
 import { MotionControl } from '@/components/motion-control';
-import { ThemedView } from '@/components/themed-view';
 import { LOCATIONS } from '@/constants/locations';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 
@@ -46,7 +45,7 @@ export default function HomeScreen() {
     );
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.directions}>
           <Directions fontSize={directionsSize} />
@@ -61,13 +60,15 @@ export default function HomeScreen() {
         </View>
       </SafeAreaView>
       <MotionControl />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // Black whatever the system's light or dark mode, so the book stands out.
+    backgroundColor: '#000000',
   },
   safeArea: {
     flex: 1,

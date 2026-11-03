@@ -12,7 +12,8 @@ const MAP_WIDTH = 1800;
 const MAP_HEIGHT = 1200;
 const spot = (x: number, y: number) => ({ x: x / MAP_WIDTH, y: y / MAP_HEIGHT });
 
-// The nine walkers, listed together on the pages they travel through as a group.
+// The nine walkers, listed together on the pages they travel through as a group. (Gandalf is
+// left out after Moria, where he falls.)
 const FELLOWSHIP: CharacterId[] = [
   'frodo',
   'samwise',
@@ -32,7 +33,7 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Bennington Lake',
     description:
       'The quiet, green heart of the Shire. Bilbo celebrates his 111th birthday, Frodo inherits Bag End and the Golden Ring, and Gandalf tells Frodo he must leave the Shire.',
-    characters: ['frodo', 'samwise', 'merry', 'pippin'],
+    characters: ['frodo', 'samwise', 'merry', 'pippin', 'gandalf'],
     score: 'Concerning Hobbits',
     photo: { image: require('@/assets/images/locations/WW Shire.png') },
     mapMarker: { label: 'Bennington', ...spot(414, 388) },
@@ -70,7 +71,7 @@ export const LOCATIONS: BookPage[] = [
     mapMarker: { label: 'The Prancing Taco', ...spot(639, 210) },
   },
   {
-    location: 'Wallulatop',
+    location: 'Wallula Top',
     lotrLocation: 'Weathertop',
     lotrAltName: 'Amon Sûl',
     wallaWallaName: 'Wallula Gap',
@@ -78,7 +79,7 @@ export const LOCATIONS: BookPage[] = [
       'A lonely hilltop on the road east. The hobbits camp on Weathertop and are attacked by the Nazgul, and Frodo is stabbed by a Morgul-knife.',
     characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn'],
     score: 'A Knife in the Dark',
-    mapMarker: { label: 'Wallulatop', ...spot(700, 386) },
+    mapMarker: { label: 'Wallula Top', ...spot(700, 386) },
   },
   {
     location: 'Whitmandell',
@@ -87,7 +88,7 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Whitman College',
     description:
       'The Last Homely House east of the Sea. Frodo wakes after being healed of his Morgul-knife wound, the Council of Elron decides the fate of the One Ring, and Bilbo retires here after his eleventy-first birthday.',
-    characters: ['gandalf', 'aragorn', 'frodo', 'boromir', 'gimli', 'legolas'],
+    characters: ['gandalf', 'aragorn', 'frodo', 'boromir', 'gimli', 'legolas', 'samwise', 'merry', 'pippin'],
     score: 'The Fellowship Theme, Concerning Hobbits',
     photo: { image: require('@/assets/images/locations/WW Rivendell.png') },
     mapMarker: { label: 'Whitmandell', ...spot(805, 238) },
@@ -110,7 +111,7 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Cordiner Hall',
     description:
       'Vast, dark halls beneath the mountains. Gandalf defends the Fellowship from the Balrog on the Bridge of Khazad-dûm before falling into the abyss.',
-    characters: FELLOWSHIP,
+    characters: [...FELLOWSHIP, 'gollum'],
     score: 'The Fellowship Theme',
     photo: { image: require('@/assets/images/locations/WW Moria.png') },
     mapMarker: { label: 'Mines of Cordiner', ...spot(841, 456) },
@@ -133,7 +134,7 @@ export const LOCATIONS: BookPage[] = [
     wallaWallaName: 'Mill Creek',
     description:
       'The Great River the Fellowship follows south by boat. Driven by the Ring’s influence, Boromir tries to take the Ring from Frodo.',
-    characters: ['frodo', 'boromir', 'samwise', 'aragorn'],
+    characters: [...FELLOWSHIP.filter((id) => id !== 'gandalf'), 'gollum'],
     score: 'Argonath',
     mapMarker: { label: 'Anduin Creek', ...spot(1004, 636) },
   },

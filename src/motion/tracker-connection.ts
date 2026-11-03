@@ -48,10 +48,16 @@ export function connectWebSocket(url: string, { onLine, onStatus }: Handlers): T
     };
     socket.onclose = () => {
       if (closed) return;
+      // The browser doesn't say why a connection failed. From a published (https) page, the usual
+      // reason is that Chrome hasn't been allowed to reach this computer's local network.
+      const hint =
+        window.location.protocol === 'https:'
+          ? ' Is the bridge running? If so, click the icon left of the address bar and allow Local network access.'
+          : ' Is the bridge running?';
       onStatus({
         state: 'error',
         kind: 'websocket',
-        message: `Can't reach the bridge at ${url}. Retrying…`,
+        message: `Can't reach the bridge at ${url}.${hint} Retrying…`,
       });
       retry = setTimeout(open, RECONNECT_DELAY);
     };

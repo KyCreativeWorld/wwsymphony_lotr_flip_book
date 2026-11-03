@@ -177,20 +177,17 @@ function Tooling({ color, center }: { color: string; center: (color: string) => 
 function TitleBlock(color: string) {
   return (
     <G>
-      <SvgText x={CX} y={172} fill={color} fontFamily={SERIF} fontSize={22} fontStyle="italic" textAnchor="middle">
-        There and
+      <SvgText x={CX} y={176} fill={color} fontFamily={SERIF} fontSize={15} fontStyle="italic" textAnchor="middle">
+        Lord of the
       </SvgText>
-      <SvgText x={CX} y={198} fill={color} fontFamily={SERIF} fontSize={22} fontStyle="italic" textAnchor="middle">
-        Back Again
+      <SvgText x={CX} y={204} fill={color} fontFamily={SERIF} fontSize={21} fontStyle="italic" textAnchor="middle">
+        Sweet Onion
       </SvgText>
-      <Path d="M108 214 H141 M159 214 H192" stroke={color} strokeWidth={0.8} />
-      <Path d="M150 208 L156 214 L150 220 L144 214 Z" fill={color} />
-      <SvgText x={CX} y={240} fill={color} fontFamily={SERIF} fontSize={11} letterSpacing={1} textAnchor="middle">
-        A HOBBIT&apos;S TALE
+      <SvgText x={CX} y={230} fill={color} fontFamily={SERIF} fontSize={21} fontStyle="italic" textAnchor="middle">
+        Rings
       </SvgText>
-      <SvgText x={CX} y={258} fill={color} fontFamily={SERIF} fontSize={10} fontStyle="italic" textAnchor="middle">
-        by Bilbo Baggins
-      </SvgText>
+      <Path d="M108 248 H141 M159 248 H192" stroke={color} strokeWidth={0.8} />
+      <Path d="M150 242 L156 248 L150 254 L144 248 Z" fill={color} />
     </G>
   );
 }

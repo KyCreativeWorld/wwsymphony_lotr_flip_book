@@ -37,7 +37,7 @@ Title: Grey Wizard
 Race: Maia
 Home: Valinor
 Items: Wizard Staff, fireworks, Glamdring
-Basic Description: The most loyal of the five Wizards sent to Middle-earth, Gandalf discovered that Bilbo and later Frodo possesses the One Ring and initiates the forming of the Fellowship of the Ring.
+Basic Description: The most loyal of the five Wizards sent to Middle-earth, Gandalf discovers that Bilbo and later Frodo possesses the One Ring and initiates the forming of the Fellowship of the Ring.
 
 
 

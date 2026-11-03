@@ -27,7 +27,7 @@ Score: A Knife in the Dark
 
 
 Location:
-Wheatfields (Edge of The Shire)
+Wheatfields (Edge of the shire)
 
 Characters:
 Frodo, Samwise, Merry, Pippin
@@ -41,7 +41,7 @@ Score: Shortcuts to Mushrooms
 
 
 Location:
-The Prancing Taco (The Prancing Pony, Bree)
+The Prancing Taco (The Prancing Pony (Bree)
 
 Characters:
 Frodo, Samwise, Merry, Pippin, Aragorn
@@ -55,7 +55,7 @@ Score: None
 
 
 Location:
-Wallulatop (Weathertop)
+Wallula Top (Weathertop)
 
 Characters:
 Frodo, Samwise, Merry, Pippin, Aragorn, Nazgul
@@ -69,7 +69,7 @@ Score: A Knife in the Dark
 
 
 Location:
-Whitmandell (Rivendell)
+Rivendell
 
 Characters:
 Council of Elron: Elron, Gandalf the Grey, Aragorn, Frodo, Bilbo, Boromir, Glóin, Gimli, Legolas 
