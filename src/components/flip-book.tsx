@@ -926,9 +926,10 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
         {page.description}
       </Text>
 
-      <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03, marginTop: pageWidth * 0.05 }]}>
-        Characters
-      </Text>
+      <View style={[styles.labelRow, { marginTop: pageWidth * 0.05 }]}>
+        <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Characters</Text>
+        <Text style={[styles.clickUs, { fontSize: pageWidth * 0.03 }]}>Click us</Text>
+      </View>
       <View
         style={[
           styles.portraits,
@@ -1008,6 +1009,12 @@ type CharacterInfoPageProps = {
 // each a quick link to that location's pages.
 function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOpenLocation }: CharacterInfoPageProps) {
   const character = lookUpCharacter(id);
+  // Only items with a sketch are shown. The rest stay in src/constants/characters.ts.
+  const items = character.items.split(', ').filter((item) => itemImage(item, id));
+  const itemSize = pageWidth * 0.18;
+  // Sauron's one item, the One Ring, is shown big instead of in the usual Items list.
+  const featuredItem = id === 'sauron' ? items[0] : undefined;
+  const featuredImage = featuredItem && itemImage(featuredItem, id);
   return (
     <View
       style={[
@@ -1018,30 +1025,43 @@ function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOp
         {character.about}
       </Text>
 
-      {/* One item per line, with its sketch beside it when there is one. */}
-      <View style={{ marginTop: pageWidth * 0.05 }}>
-        <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Items</Text>
-        {character.items.split(', ').map((item) => {
-          const image = itemImage(item);
-          return (
-            <View key={item} style={[styles.item, { gap: pageWidth * 0.02 }]}>
-              {image && (
-                <Image
-                  source={image}
-                  contentFit="contain"
-                  style={{ width: pageWidth * 0.18, height: pageWidth * 0.18 }}
-                />
-              )}
-              <Text
-                style={[styles.pageBody, styles.itemName, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.058 }]}>
-                {item}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
+      {featuredItem ? (
+        // The item fills the space between the bio and the places, with its name underneath.
+        <View style={[styles.featuredItem, { marginVertical: pageWidth * 0.03 }]}>
+          {featuredImage && <Image source={featuredImage} contentFit="contain" style={styles.featuredImage} />}
+          <Text style={[styles.pageTitle, { fontSize: pageWidth * 0.065, marginTop: pageWidth * 0.02 }]}>
+            {featuredItem}
+          </Text>
+        </View>
+      ) : items.length > 0 && (
+        // Items sit side by side and wrap onto new lines, each sketch above its name.
+        <View style={{ marginTop: pageWidth * 0.03 }}>
+          <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Items</Text>
+          <View style={[styles.items, { columnGap: pageWidth * 0.03, rowGap: pageWidth * 0.01 }]}>
+            {items.map((item) => {
+              return (
+                <View key={item} style={[styles.item, { width: pageWidth * 0.24 }]}>
+                  <Image
+                    source={itemImage(item, id)}
+                    contentFit="contain"
+                    style={{ width: itemSize, height: itemSize }}
+                  />
+                  <Text
+                    style={[
+                      styles.pageBody,
+                      styles.itemName,
+                      { fontSize: pageWidth * 0.036, lineHeight: pageWidth * 0.044 },
+                    ]}>
+                    {item}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
-      <View style={[styles.score, { paddingTop: pageWidth * 0.03 }]}>
+      <View style={[styles.score, { paddingTop: pageWidth * 0.015 }]}>
         <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03 }]}>Appears In</Text>
         <View style={[styles.links, { columnGap: pageWidth * 0.035, rowGap: pageWidth * 0.012 }]}>
           {appearsIn.map((place) => (
@@ -1273,12 +1293,23 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     textAlign: 'center',
   },
-  item: {
+  featuredItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  featuredImage: {
+    flex: 1,
+    width: '100%',
+  },
+  items: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  item: {
     alignItems: 'center',
   },
   itemName: {
-    flexShrink: 1,
+    textAlign: 'center',
   },
   links: {
     flexDirection: 'row',
@@ -1317,6 +1348,18 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 2,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  clickUs: {
+    fontFamily: Fonts.serif,
+    fontWeight: 700,
+    color: LINK,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   pageTitle: {
     fontFamily: Fonts.serif,

@@ -115,6 +115,7 @@ export const CHARACTERS = {
     name: 'Gimli, son of Glóin',
     shortName: 'Gimli',
     race: 'Dwarf',
+    title: 'DWARF OF THE HOUSE OF DURIN',
     home: 'Ered Luin',
     items: 'Axe',
     about:
