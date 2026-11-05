@@ -909,7 +909,13 @@ type LocationTextPageProps = LocationPageProps & {
 // Right page of a location: a short description at the top, the characters as round portraits
 // running left to right like lines of text, and the score at the bottom.
 function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacter }: LocationTextPageProps) {
-  const portraitSize = pageWidth * 0.1;
+  // Pictures are 0.15 of the page's width. The row of portraits reaches halfway into the page's
+  // side margins (0.9 wide), so five fit across and even the biggest casts take two rows. Each
+  // slot is a hair under a fifth, so rounding never pushes the fifth onto the next row.
+  const portraitSize = pageWidth * 0.15;
+  const portraitInset = pageWidth * 0.05;
+  const portraitWidth = pageWidth * 0.179;
+  const nameSize = Math.max(10, pageWidth * 0.022);
   return (
     <View
       style={[
@@ -923,9 +929,21 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
       <Text style={[styles.sectionLabel, { fontSize: pageWidth * 0.03, marginTop: pageWidth * 0.05 }]}>
         Characters
       </Text>
-      <View style={[styles.portraits, { rowGap: pageWidth * 0.025, marginTop: pageWidth * 0.015 }]}>
+      <View
+        style={[
+          styles.portraits,
+          { rowGap: pageWidth * 0.025, marginTop: pageWidth * 0.015, marginHorizontal: -portraitInset },
+        ]}>
         {page.characters.map((id) => (
-          <Portrait key={id} id={id} size={portraitSize} disabled={!interactive} onPress={onOpenCharacter} />
+          <Portrait
+            key={id}
+            id={id}
+            size={portraitSize}
+            width={portraitWidth}
+            nameSize={nameSize}
+            disabled={!interactive}
+            onPress={onOpenCharacter}
+          />
         ))}
       </View>
 

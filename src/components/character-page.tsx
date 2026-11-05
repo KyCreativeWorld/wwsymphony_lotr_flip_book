@@ -53,13 +53,16 @@ export function Bust({ id }: { id: CharacterId }) {
 type PortraitProps = {
   id: CharacterId;
   size: number;
+  // How much room each portrait takes across, and the name's text size.
+  width: number;
+  nameSize: number;
   disabled: boolean;
   onPress: (id: CharacterId) => void;
 };
 
 // A character on a location page: sketch with the name underneath. Grows on hover, and
 // is a quick link to the character's own pages.
-export function Portrait({ id, size, disabled, onPress }: PortraitProps) {
+export function Portrait({ id, size, width, nameSize, disabled, onPress }: PortraitProps) {
   const [hovered, setHovered] = useState(false);
   const character = lookUpCharacter(id);
   return (
@@ -70,9 +73,9 @@ export function Portrait({ id, size, disabled, onPress }: PortraitProps) {
       onPress={() => onPress(id)}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
-      style={[styles.portrait, { width: size * 1.45 }, hovered && styles.portraitHovered]}>
+      style={[styles.portrait, { width }, hovered && styles.portraitHovered]}>
       <Headshot character={character} size={size} />
-      <Text style={[styles.portraitName, { fontSize: Math.max(10, size * 0.22) }]} numberOfLines={2}>
+      <Text style={[styles.portraitName, { fontSize: nameSize }]} numberOfLines={2}>
         {character.shortName}
       </Text>
     </Pressable>

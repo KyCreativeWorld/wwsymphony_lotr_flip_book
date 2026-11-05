@@ -145,3 +145,26 @@ Events: Acts as a focus on the Dark Lord’s awareness.
 
 
 Score: None
+
+
+Descriptions:
+
+Hobbiton: A peaceful farming village in the Shire where the Hobbits reside.
+
+Isengard: Home to Saruman the White, Isengard is a ring shaped fortress located at the southern end of the Misty Mountains.
+
+The Prancing Pony: An Inn located in the village of Bree.
+
+Weathertop: The highest point in the Weather Hills in the Eriador Wilderness.
+
+Rivendell: A hidden valley of peace inhabited by Elves and located in the foothills of the Misty Mountains.
+
+Mountains of Caradhras: Within the Misty Mountains, one of three massive peaks that tower over the kingdom of Moria.
+
+Mines of Moria: A subterranean Dwarven kingdom beneath the Misty Mountains.
+
+Lothlorien: An enchanted forest kingdom of the Elves.
+
+River Anduin: The longest river in the continent that borders the lands of Men and Elves.
+
+Eye of Sauron: An entity made of fire and black smoke. Represents Sauron’s all-seeing power as he searches for the One Ring.

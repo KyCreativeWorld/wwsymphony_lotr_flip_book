@@ -23,7 +23,7 @@ export type Character = {
 //
 // Busts are line drawings in assets/images/characters/. A character without one shows a
 // placeholder silhouette until it's added, e.g.
-//   image: require('@/assets/images/characters/Gimli.png'),
+//   image: require('@/assets/images/characters/Bilbo.png'),
 export const CHARACTERS = {
   frodo: {
     image: require('@/assets/images/characters/Frodo.png'),
@@ -111,6 +111,7 @@ export const CHARACTERS = {
       'A Woodland Elf who forms an unlikely (because of the ancient quarrel between Elves and Dwarves) friendship with Dwarf Gimli and joins the Fellowship of the Ring as a representative of the Elves.',
   },
   gimli: {
+    image: require('@/assets/images/characters/Gimli.png'),
     name: 'Gimli, son of Glóin',
     shortName: 'Gimli',
     race: 'Dwarf',
@@ -120,6 +121,7 @@ export const CHARACTERS = {
       'A Dwarf of the House of Durin who forms an unlikely (because of the ancient quarrel between Elves and Dwarves) friendship with Elf Legolas and joins the Fellowship of the Ring as a representative of the Dwarves.',
   },
   gollum: {
+    image: require('@/assets/images/characters/Gollum.png'),
     name: 'Gollum (Sméagol)',
     shortName: 'Gollum',
     race: 'Hobbit',
@@ -129,6 +131,7 @@ export const CHARACTERS = {
       'A Hobbit corrupted by the One Ring, whose only goal after Bilbo took the Ring is to get the precious Ring back into his possession.',
   },
   boromir: {
+    image: require('@/assets/images/characters/Boromir.png'),
     name: 'Boromir',
     shortName: 'Boromir',
     race: 'Human',
@@ -139,6 +142,7 @@ export const CHARACTERS = {
       'A renowned warrior and the heir to the Stewardship of Gondor, the first line of defense against Mordor, who joins the Fellowship of the Ring as a representative of Gondor.',
   },
   saruman: {
+    image: require('@/assets/images/characters/Saruman.png'),
     name: 'Saruman the White',
     shortName: 'Saruman the White',
     race: 'Maia',
