@@ -101,6 +101,9 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
   const pageHeight = pageWidth * PAGE_ASPECT;
   const coverWidth = pageWidth + COVER_MARGIN_X;
   const coverHeight = pageHeight + COVER_MARGIN_Y * 2;
+  // The round buttons are full size on pages 300 wide or more, and shrink on smaller (phone) pages
+  // so they don't cover the text.
+  const buttonScale = Math.min(1, Math.max(0.6, pageWidth / 300));
   const [current, setCurrent] = useState(0);
   const [turning, setTurning] = useState<number | null>(null);
   const [turnDuration, setTurnDuration] = useState(TURN_DURATION);
@@ -345,6 +348,7 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         hidden={isClosedFront}
         disabled={busy}
         onPress={() => turn(-1)}
+        scale={buttonScale}
         style={styles.arrowLeft}
       />
       <ArrowButton
@@ -353,6 +357,7 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         hidden={isClosedBack}
         disabled={busy}
         onPress={() => turn(1)}
+        scale={buttonScale}
         style={styles.arrowRight}
       />
       {/* Back to the map, which is the first spread after the cover. */}
@@ -362,6 +367,7 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         hidden={isClosedFront || current === MAP_SPREAD}
         disabled={busy}
         onPress={() => riffleTo(MAP_SPREAD)}
+        scale={buttonScale}
         style={styles.homeButton}
       />
     </Animated.View>
@@ -915,7 +921,9 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
   const portraitSize = pageWidth * 0.15;
   const portraitInset = pageWidth * 0.05;
   const portraitWidth = pageWidth * 0.179;
-  const nameSize = Math.max(10, pageWidth * 0.022);
+  // At least 10 so names stay readable, but no bigger than the slot allows on small (phone) pages,
+  // or long names break mid-word.
+  const nameSize = Math.min(Math.max(10, pageWidth * 0.022), pageWidth * 0.03);
   return (
     <View
       style={[
@@ -1121,6 +1129,7 @@ type ArrowButtonProps = {
   hidden: boolean;
   disabled: boolean;
   onPress: () => void;
+  scale: number;
   style: object;
 };
 
@@ -1139,7 +1148,7 @@ function HomeIcon() {
   );
 }
 
-function ArrowButton({ label, accessibilityLabel, hidden, disabled, onPress, style }: ArrowButtonProps) {
+function ArrowButton({ label, accessibilityLabel, hidden, disabled, onPress, scale, style }: ArrowButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -1150,6 +1159,7 @@ function ArrowButton({ label, accessibilityLabel, hidden, disabled, onPress, sty
       style={({ pressed }) => [
         styles.arrow,
         style,
+        scale < 1 && { transform: [{ scale }] },
         disabled && styles.arrowDisabled,
         hidden && styles.arrowHidden,
         pressed && styles.arrowPressed,
@@ -1395,16 +1405,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(91, 58, 34, 0.85)',
   },
+  // Each button shrinks toward its own corner on small pages.
   arrowLeft: {
     left: 10,
+    transformOrigin: 'top left',
   },
   arrowRight: {
     right: 10,
+    transformOrigin: 'top right',
   },
   homeButton: {
     top: 'auto',
     bottom: 10,
     left: 10,
+    transformOrigin: 'bottom left',
   },
   arrowLabel: {
     color: PAPER,

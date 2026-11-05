@@ -27,14 +27,14 @@ const PHONE_MAX_SIDE = 600;
 export default function HomeScreen() {
   // The book shares the screen with directions along the top and a mini map on the right.
   const window = useWindowDimensions();
-  // On a phone the book takes the whole screen in landscape: the tracker directions and the
-  // hover-only mini map are left out (the book's home button still goes back to the map), and a
-  // phone held upright gets everything turned a quarter turn, so it's read with the phone sideways.
+  // On a phone held sideways, the book takes the whole screen: the directions and the mini map
+  // are left out (the book's home button still goes back to the map). On a phone held upright,
+  // the book runs the full width, with the directions above it and the mini map below.
   const phone = Math.min(window.width, window.height) < PHONE_MAX_SIDE;
-  const rotated = phone && window.height > window.width;
-  const stage = rotated ? { width: window.height, height: window.width } : window;
-  const sideWidth = clamp(stage.width * 0.16, 140, 280);
-  const directionsSize = clamp(stage.width * 0.012, 12, 18);
+  const upright = phone && window.height > window.width;
+  const sideways = phone && !upright;
+  const sideWidth = upright ? window.width * 0.5 : clamp(window.width * 0.16, 140, 280);
+  const directionsSize = clamp(window.width * 0.012, 12, 18);
 
   // Measured on the client: the web build is pre-rendered without knowing the window size.
   const [area, setArea] = useState<{ width: number; height: number } | null>(null);
@@ -55,38 +55,23 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View
-        style={
-          rotated
-            ? [
-                styles.rotated,
-                {
-                  width: stage.width,
-                  height: stage.height,
-                  left: (window.width - stage.width) / 2,
-                  top: (window.height - stage.height) / 2,
-                },
-              ]
-            : styles.stage
-        }>
-        <SafeAreaView style={[styles.safeArea, phone && styles.safeAreaPhone]}>
-          {!phone && (
-            <View style={styles.directions}>
-              <Directions fontSize={directionsSize} />
+      <SafeAreaView style={[styles.safeArea, phone && styles.safeAreaPhone]}>
+        {!sideways && (
+          <View style={styles.directions}>
+            <Directions fontSize={directionsSize} />
+          </View>
+        )}
+        <View style={[styles.main, upright && styles.mainUpright]}>
+          <View style={[styles.bookArea, phone && styles.bookAreaPhone]} onLayout={onLayout}>
+            {pageWidth !== null && <FlipBook pages={LOCATIONS} map={MAP} pageWidth={pageWidth} />}
+          </View>
+          {!sideways && (
+            <View style={[styles.side, upright && styles.sideUpright, { width: sideWidth }]}>
+              <MiniMap map={MAP} width={sideWidth - Spacing.four} />
             </View>
           )}
-          <View style={styles.main}>
-            <View style={[styles.bookArea, phone && styles.bookAreaPhone]} onLayout={onLayout}>
-              {pageWidth !== null && <FlipBook pages={LOCATIONS} map={MAP} pageWidth={pageWidth} />}
-            </View>
-            {!phone && (
-              <View style={[styles.side, { width: sideWidth }]}>
-                <MiniMap map={MAP} width={sideWidth - Spacing.four} />
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
-      </View>
+        </View>
+      </SafeAreaView>
       <MotionControl />
     </View>
   );
@@ -97,15 +82,6 @@ const styles = StyleSheet.create({
     flex: 1,
     // Black whatever the system's light or dark mode, so the book stands out.
     backgroundColor: '#000000',
-  },
-  stage: {
-    flex: 1,
-  },
-  // Turned a quarter turn clockwise about its centre, so its top edge runs along the right of an
-  // upright phone.
-  rotated: {
-    position: 'absolute',
-    transform: [{ rotate: '90deg' }],
   },
   safeArea: {
     flex: 1,
@@ -123,6 +99,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
   },
+  mainUpright: {
+    flexDirection: 'column',
+  },
   bookArea: {
     flex: 1,
     alignItems: 'center',
@@ -137,5 +116,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
     alignItems: 'flex-end',
     justifyContent: 'center',
+  },
+  sideUpright: {
+    alignSelf: 'center',
+    paddingBottom: Spacing.three,
   },
 });
