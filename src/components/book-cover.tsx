@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { type ReactNode } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Svg, {
@@ -132,8 +133,17 @@ function Fleuron({ color }: { color: string }) {
 }
 
 // Every gold-tooled line on the cover, drawn in one color so it can be stamped twice:
-// once in shadow for the pressed-in look, and once in gold on top.
-function Tooling({ color, center }: { color: string; center: (color: string) => ReactNode }) {
+// once in shadow for the pressed-in look, and once in gold on top. With `oval` off, only the
+// border and corners are drawn, leaving the middle clear.
+function Tooling({
+  color,
+  center,
+  oval,
+}: {
+  color: string;
+  center: (color: string) => ReactNode;
+  oval: boolean;
+}) {
   return (
     <G>
       <Rect x={14} y={14} width={WIDTH - 28} height={HEIGHT - 28} rx={4} stroke={color} strokeWidth={1.6} fill="none" />
@@ -147,6 +157,17 @@ function Tooling({ color, center }: { color: string; center: (color: string) => 
         </G>
       ))}
 
+      {oval && <OvalTooling color={color} />}
+
+      {center(color)}
+    </G>
+  );
+}
+
+// The gold oval in the middle of the back cover: beads, a vine with leaves, and fleurons.
+function OvalTooling({ color }: { color: string }) {
+  return (
+    <G>
       <Ellipse cx={CX} cy={CY} rx={104} ry={146} stroke={color} strokeWidth={1.4} fill="none" />
       {BEADS.map((bead, i) => (
         <Circle key={i} cx={bead.x} cy={bead.y} r={1.3} fill={color} />
@@ -168,26 +189,24 @@ function Tooling({ color, center }: { color: string; center: (color: string) => 
           <Fleuron color={color} />
         </G>
       ))}
-
-      {center(color)}
     </G>
   );
 }
 
-function TitleBlock(color: string) {
+// The front cover's lettering: the title across the top and the event along the bottom. The
+// cover drawing sits between them (see FrontCover).
+function FrontLettering(color: string) {
   return (
     <G>
-      <SvgText x={CX} y={176} fill={color} fontFamily={SERIF} fontSize={15} fontStyle="italic" textAnchor="middle">
-        Lord of the
+      <SvgText x={CX} y={64} fill={color} fontFamily={SERIF} fontSize={17} letterSpacing={1} textAnchor="middle">
+        THE LORD OF THE
       </SvgText>
-      <SvgText x={CX} y={204} fill={color} fontFamily={SERIF} fontSize={21} fontStyle="italic" textAnchor="middle">
-        Sweet Onion
+      <SvgText x={CX} y={86} fill={color} fontFamily={SERIF} fontSize={17} letterSpacing={1} textAnchor="middle">
+        SWEET ONION RINGS
       </SvgText>
-      <SvgText x={CX} y={230} fill={color} fontFamily={SERIF} fontSize={21} fontStyle="italic" textAnchor="middle">
-        Rings
+      <SvgText x={CX} y={372} fill={color} fontFamily={SERIF} fontSize={14} letterSpacing={2} textAnchor="middle">
+        SYMPHONICON 2026
       </SvgText>
-      <Path d="M108 248 H141 M159 248 H192" stroke={color} strokeWidth={0.8} />
-      <Path d="M150 242 L156 248 L150 254 L144 248 Z" fill={color} />
     </G>
   );
 }
@@ -214,7 +233,15 @@ function RoundDoor(color: string) {
   );
 }
 
-function LeatherCover({ spine, center }: { spine: Side; center: (color: string) => ReactNode }) {
+function LeatherCover({
+  spine,
+  center,
+  oval,
+}: {
+  spine: Side;
+  center: (color: string) => ReactNode;
+  oval: boolean;
+}) {
   const spineX = spine === 'left' ? ['0', '0.12'] : ['1', '0.88'];
   // Gradient ids are global on web, so each cover gets its own.
   const id = (name: string) => `${name}-${spine}`;
@@ -255,21 +282,41 @@ function LeatherCover({ spine, center }: { spine: Side; center: (color: string) 
       <Rect x={8} y={8} width={WIDTH - 16} height={HEIGHT - 16} rx={5} stroke={EMBOSS_SHADOW} strokeWidth={1} opacity={0.6} fill="none" />
 
       <G transform="translate(0.9 0.9)" opacity={0.75}>
-        <Tooling color={EMBOSS_SHADOW} center={center} />
+        <Tooling color={EMBOSS_SHADOW} center={center} oval={oval} />
       </G>
-      <Tooling color={`url(#${id('gold')})`} center={center} />
+      <Tooling color={`url(#${id('gold')})`} center={center} oval={oval} />
 
       <Rect width={WIDTH} height={HEIGHT} fill={`url(#${id('spine')})`} />
     </Svg>
   );
 }
 
+// The cover drawing fills the space between the title and the bottom line, in the 300×420
+// artwork's units (y 100 to 345).
+const DRAWING_TOP = 100;
+const DRAWING_BOTTOM = 345;
+
 export function FrontCover() {
-  return <LeatherCover spine="left" center={TitleBlock} />;
+  return (
+    <View style={styles.front}>
+      <LeatherCover spine="left" center={FrontLettering} oval={false} />
+      <Image
+        source={require('@/assets/images/Lord of the Sweet Onion Rings Cover.png')}
+        contentFit="contain"
+        style={[
+          styles.drawing,
+          {
+            top: `${(DRAWING_TOP / HEIGHT) * 100}%`,
+            bottom: `${((HEIGHT - DRAWING_BOTTOM) / HEIGHT) * 100}%`,
+          },
+        ]}
+      />
+    </View>
+  );
 }
 
 export function BackCover() {
-  return <LeatherCover spine="right" center={RoundDoor} />;
+  return <LeatherCover spine="right" center={RoundDoor} oval />;
 }
 
 // The inside of a cover: leather turned in around the edges, with a paper endpaper glued over it.
@@ -284,6 +331,15 @@ export function InsideCover({ spine, children }: { spine: Side; children?: React
 }
 
 const styles = StyleSheet.create({
+  front: {
+    flex: 1,
+  },
+  drawing: {
+    position: 'absolute',
+    left: '10%',
+    right: '10%',
+    pointerEvents: 'none',
+  },
   inside: {
     flex: 1,
     backgroundColor: LEATHER_DARK,
