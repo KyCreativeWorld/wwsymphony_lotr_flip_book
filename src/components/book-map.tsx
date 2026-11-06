@@ -1,6 +1,15 @@
 import { Image, type ImageSource } from 'expo-image';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type GestureResponderEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 
 import { Fonts } from '@/constants/theme';
 
@@ -96,6 +105,96 @@ export function MapHalf({
   );
 }
 
+type ScrollingMapProps = {
+  map: BookMap;
+  markers: PlacedMarker[];
+  width: number;
+  height: number;
+  interactive: boolean;
+  onSelect: (pageIndex: number) => void;
+};
+
+// The whole map on one page, as tall as the page and scrolled sideways, with a scroll bar along
+// the bottom that shows where you are and can be dragged. Used on a phone held upright, where the
+// book has one page at a time.
+export function ScrollingMap({ map, markers, width, height, interactive, onSelect }: ScrollingMapProps) {
+  const mapWidth = Math.max(width, height * map.aspectRatio);
+  const overflow = mapWidth - width;
+  const scroller = useRef<ScrollView>(null);
+  const [offset, setOffset] = useState(overflow / 2);
+  const [trackWidth, setTrackWidth] = useState(0);
+  const pinSize = Math.max(22, width * 0.07);
+
+  const thumbWidth = trackWidth * (width / mapWidth);
+  const thumbLeft = overflow > 0 ? (offset / overflow) * (trackWidth - thumbWidth) : 0;
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) =>
+    setOffset(event.nativeEvent.contentOffset.x);
+  // Touching or dragging along the bar moves the map so the thumb's middle sits under the finger.
+  const scrollToTouch = (event: GestureResponderEvent) => {
+    if (trackWidth <= thumbWidth) return;
+    const fraction = (event.nativeEvent.locationX - thumbWidth / 2) / (trackWidth - thumbWidth);
+    const x = Math.min(1, Math.max(0, fraction)) * overflow;
+    scroller.current?.scrollTo({ x, animated: false });
+    setOffset(x);
+  };
+
+  return (
+    <View style={{ width, height }}>
+      <ScrollView
+        ref={scroller}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        // Start in the middle, where most of the places are.
+        contentOffset={{ x: overflow / 2, y: 0 }}
+        onLayout={() => scroller.current?.scrollTo({ x: overflow / 2, animated: false })}
+        onScroll={onScroll}
+        scrollEventThrottle={16}>
+        <View style={{ width: mapWidth, height }}>
+          <Image
+            source={map.image}
+            contentFit="fill"
+            accessibilityLabel="Map of Middle-earth over Walla Walla"
+            style={StyleSheet.absoluteFill}
+          />
+          {markers.map(({ marker, pageIndex }) => {
+            const x = marker.x * mapWidth;
+            const labelWidth = pinSize * 6;
+            const labelSide =
+              x + labelWidth / 2 > mapWidth ? 'left' : x - labelWidth / 2 < 0 ? 'right' : 'below';
+            return (
+              <MarkerPin
+                key={pageIndex}
+                label={marker.label}
+                labelSide={labelSide}
+                x={x}
+                y={marker.y * height}
+                size={pinSize}
+                disabled={!interactive}
+                onPress={() => onSelect(pageIndex)}
+              />
+            );
+          })}
+        </View>
+      </ScrollView>
+      {overflow > 0 && (
+        <View
+          style={[styles.scrollTrack, { height: pinSize * 0.9, bottom: pinSize * 0.7 }]}
+          onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={scrollToTouch}
+          onResponderMove={scrollToTouch}>
+          <View
+            pointerEvents="none"
+            style={[styles.scrollThumb, { left: thumbLeft, width: thumbWidth }]}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
 type MarkerPinProps = {
   label: string;
   labelSide: 'below' | 'left' | 'right';
@@ -162,6 +261,26 @@ const styles = StyleSheet.create({
   },
   markerHovered: {
     transform: [{ scale: 1.15 }],
+  },
+  // A wide, easy-to-grab bar, with the thumb showing which part of the map is in view.
+  scrollTrack: {
+    position: 'absolute',
+    left: '12%',
+    right: '12%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(59, 42, 26, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(232, 200, 119, 0.8)',
+    cursor: 'pointer',
+  },
+  scrollThumb: {
+    position: 'absolute',
+    top: 2,
+    bottom: 2,
+    borderRadius: 999,
+    backgroundColor: '#7a1a17',
+    borderWidth: 1,
+    borderColor: '#e8c877',
   },
   inset: {
     overflow: 'hidden',

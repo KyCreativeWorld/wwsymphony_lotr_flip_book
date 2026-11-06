@@ -45,9 +45,20 @@ const REARM_DISTANCE = 30;
 const CURSOR_SMOOTHING = 60;
 // Readings older than this mean the tracker has stopped, and the cursor hides (ms).
 const STALE_AFTER = 500;
-// Each calibration pose counts down this many seconds, then averages the last half second.
-const CALIBRATION_COUNTDOWN = 3;
-const CALIBRATION_AVERAGE = 500;
+// Each calibration step gives this many seconds to read the instruction and get into position,
+// then counts down while the object is held still, averaging the last second of readings, then
+// shows "Got it" for a moment before the next step.
+const CALIBRATION_READY = 5;
+const CALIBRATION_HOLD = 3;
+const CALIBRATION_AVERAGE = 1000;
+const CALIBRATION_DONE_PAUSE = 1500;
+
+type CalibrationState = {
+  step: number;
+  phase: 'ready' | 'hold' | 'done';
+  countdown: number;
+  error?: string;
+};
 
 const DEFAULT_BRIDGE_URL = 'ws://localhost:8787';
 
@@ -103,15 +114,15 @@ function saveSettings(settings: Settings) {
 
 const STEP_INSTRUCTIONS: Record<CalibrationStep, { pointing: string; positionOnly: string }> = {
   centre: {
-    pointing: 'Stand where visitors will, and point the object at the centre of the screen.',
-    positionOnly: 'Stand where visitors will, and hold the object in front of you.',
+    pointing: 'Stand where visitors will stand. Point the object at the glowing circle in the middle.',
+    positionOnly: 'Stand where visitors will stand. Hold the object in front of you.',
   },
   topLeft: {
-    pointing: 'Hold the object out to your left, and point it at the top-left corner of the screen.',
+    pointing: 'Hold the object out to your left. Point it at the glowing circle in the top-left corner.',
     positionOnly: 'Hold the object out to your left, where a swipe would start.',
   },
   bottomRight: {
-    pointing: 'Hold the object out to your right, and point it at the bottom-right corner of the screen.',
+    pointing: 'Hold the object out to your right. Point it at the glowing circle in the bottom-right corner.',
     positionOnly: 'Hold the object out to your right, where a swipe would end.',
   },
 };
@@ -120,7 +131,7 @@ export function MotionControl() {
   const [settings, setSettings] = useState(loadSettings);
   const [status, setStatus] = useState<ConnectionStatus>({ state: 'disconnected' });
   const [panelOpen, setPanelOpen] = useState(false);
-  const [calibrating, setCalibrating] = useState<{ step: number; countdown: number; error?: string } | null>(
+  const [calibrating, setCalibrating] = useState<CalibrationState | null>(
     null,
   );
   const [readout, setReadout] = useState<{ rate: number; sample: TrackerSample | null }>({
@@ -309,12 +320,35 @@ export function MotionControl() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Calibration: count down each pose, then average the last moment of readings.
+  // Calibration: for each pose, time to get ready, then a countdown holding still, then the last
+  // second of readings is averaged, and "Got it" shows before the next step.
   useEffect(() => {
     if (!calibrating || calibrating.error) return;
+    if (calibrating.phase === 'done') {
+      const timer = setTimeout(() => {
+        const next = calibrating.step + 1;
+        if (next < CALIBRATION_STEPS.length) {
+          setCalibrating({ step: next, phase: 'ready', countdown: CALIBRATION_READY });
+          return;
+        }
+        const finished = draft.current as Calibration;
+        const problem = calibrationProblem(finished);
+        if (problem) {
+          setCalibrating({ ...calibrating, error: problem });
+          return;
+        }
+        updateSettings({ calibration: finished });
+        setCalibrating(null);
+      }, CALIBRATION_DONE_PAUSE);
+      return () => clearTimeout(timer);
+    }
     const timer = setTimeout(() => {
       if (calibrating.countdown > 1) {
         setCalibrating({ ...calibrating, countdown: calibrating.countdown - 1 });
+        return;
+      }
+      if (calibrating.phase === 'ready') {
+        setCalibrating({ ...calibrating, phase: 'hold', countdown: CALIBRATION_HOLD });
         return;
       }
       const now = performance.now();
@@ -324,19 +358,7 @@ export function MotionControl() {
         return;
       }
       draft.current[CALIBRATION_STEPS[calibrating.step]] = pose;
-
-      if (calibrating.step + 1 < CALIBRATION_STEPS.length) {
-        setCalibrating({ step: calibrating.step + 1, countdown: CALIBRATION_COUNTDOWN });
-        return;
-      }
-      const finished = draft.current as Calibration;
-      const problem = calibrationProblem(finished);
-      if (problem) {
-        setCalibrating({ ...calibrating, error: problem });
-        return;
-      }
-      updateSettings({ calibration: finished });
-      setCalibrating(null);
+      setCalibrating({ ...calibrating, phase: 'done' });
     }, 1000);
     return () => clearTimeout(timer);
   }, [calibrating]);
@@ -344,7 +366,7 @@ export function MotionControl() {
   const startCalibration = () => {
     draft.current = {};
     setPanelOpen(false);
-    setCalibrating({ step: 0, countdown: CALIBRATION_COUNTDOWN });
+    setCalibrating({ step: 0, phase: 'ready', countdown: CALIBRATION_READY });
   };
 
   // T opens and closes the panel; Escape closes it or stops calibrating.
@@ -409,8 +431,24 @@ export function MotionControl() {
           {step === 'topLeft' && <div style={{ ...styles.cornerTarget, top: 0, left: 0 }} />}
           {step === 'bottomRight' && <div style={{ ...styles.cornerTarget, bottom: 0, right: 0 }} />}
           <div style={styles.calibrationCard}>
+            {/* One dot per step: filled once done, outlined for the current one. */}
+            <div style={styles.stepDots}>
+              {CALIBRATION_STEPS.map((name, index) => (
+                <span
+                  key={name}
+                  style={{
+                    ...styles.stepDot,
+                    ...(index < calibrating.step || (index === calibrating.step && calibrating.phase === 'done')
+                      ? styles.stepDotDone
+                      : index === calibrating.step
+                        ? styles.stepDotCurrent
+                        : {}),
+                  }}
+                />
+              ))}
+            </div>
             <div style={styles.calibrationStep}>
-              Calibration {calibrating.step + 1} of {CALIBRATION_STEPS.length}
+              Step {calibrating.step + 1} of {CALIBRATION_STEPS.length}
             </div>
             <div style={styles.calibrationText}>
               {hasOrientation ? STEP_INSTRUCTIONS[step].pointing : STEP_INSTRUCTIONS[step].positionOnly}
@@ -418,14 +456,24 @@ export function MotionControl() {
             {calibrating.error ? (
               <>
                 <div style={styles.error}>{calibrating.error}</div>
-                <button style={styles.button} onClick={() => setCalibrating(null)}>
-                  Close
-                </button>
+                <div style={styles.buttonRow}>
+                  <button style={styles.button} onClick={startCalibration}>
+                    Try again
+                  </button>
+                  <button style={styles.button} onClick={() => setCalibrating(null)}>
+                    Close
+                  </button>
+                </div>
               </>
+            ) : calibrating.phase === 'done' ? (
+              <div style={styles.gotIt}>✓ Got it</div>
             ) : (
               <>
+                <div style={calibrating.phase === 'hold' ? styles.phaseHold : styles.phaseReady}>
+                  {calibrating.phase === 'hold' ? 'Hold still' : 'Get ready'}
+                </div>
                 <div style={styles.countdown}>{calibrating.countdown}</div>
-                <div style={styles.hint}>Hold still. Press Esc to cancel.</div>
+                <div style={styles.hint}>Press Esc to cancel.</div>
               </>
             )}
           </div>
@@ -613,8 +661,8 @@ const styles: Record<string, CSSProperties> = {
     margin: -35,
   },
   calibrationCard: {
-    maxWidth: 420,
-    padding: 28,
+    maxWidth: 460,
+    padding: 32,
     borderRadius: 12,
     backgroundColor: PARCHMENT,
     color: INK,
@@ -622,8 +670,23 @@ const styles: Record<string, CSSProperties> = {
     textAlign: 'center',
   },
   calibrationStep: { fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase', opacity: 0.7 },
-  calibrationText: { fontSize: 22, marginTop: 10, lineHeight: 1.35 },
-  countdown: { fontSize: 56, fontWeight: 700, marginTop: 12 },
+  calibrationText: { fontSize: 24, marginTop: 10, lineHeight: 1.35 },
+  stepDots: { display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 12 },
+  stepDot: { width: 14, height: 14, borderRadius: 7, border: `2px solid ${INK}`, opacity: 0.35 },
+  stepDotCurrent: { opacity: 1 },
+  stepDotDone: { opacity: 1, backgroundColor: INK },
+  phaseReady: { fontSize: 16, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 18, opacity: 0.7 },
+  phaseHold: {
+    fontSize: 18,
+    fontWeight: 700,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginTop: 18,
+    color: '#7a1a17',
+  },
+  countdown: { fontSize: 64, fontWeight: 700, lineHeight: 1.1 },
+  gotIt: { fontSize: 32, fontWeight: 700, marginTop: 22, marginBottom: 8, color: '#2f6b2f' },
+  buttonRow: { display: 'flex', justifyContent: 'center', gap: 10 },
   error: { color: '#7a1a17', marginTop: 14, marginBottom: 12 },
   toggle: {
     position: 'fixed',

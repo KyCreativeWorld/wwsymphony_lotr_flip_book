@@ -1,6 +1,6 @@
 import { Image, type ImageSource } from 'expo-image';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import Animated, {
   Easing,
@@ -14,13 +14,23 @@ import Animated, {
 
 import { BackCover, FrontCover, InsideCover, LEATHER_DARK } from '@/components/book-cover';
 import { Bust, Portrait } from '@/components/character-page';
-import { MapHalf, MapInset, type BookMap, type MapMarker, type PlacedMarker } from '@/components/book-map';
+import {
+  MapHalf,
+  MapInset,
+  ScrollingMap,
+  type BookMap,
+  type MapMarker,
+  type PlacedMarker,
+} from '@/components/book-map';
 import { lookUpCharacter, type CharacterId } from '@/constants/characters';
 import { itemImage } from '@/constants/items';
 import { Fonts } from '@/constants/theme';
 import { onBookCommand } from '@/motion/book-commands';
 
 const TURN_DURATION = 900;
+// Width over height of the location drawings (1800 × 1200) and the map close-ups that stand in
+// for them.
+const PICTURE_ASPECT = 1.5;
 // Jumping more than one spread (from a map marker or the home button) turns one page with a few
 // blank pages fanning out beneath it, as if thumbing through a stack at once.
 const JUMP_DURATION = 1100;
@@ -74,8 +84,10 @@ export type BookPage = {
   description: string;
   characters: CharacterId[];
   score: string;
-  // Without a photo, the left page shows a close-up of the location on the map instead.
-  photo?: { image: ImageSource };
+  // Without a photo, the left page shows a close-up of the location on the map instead. Drawings
+  // are shown whole; real photos (`isPhoto`) are cropped to fill the space and faded a little so
+  // they blend into the paper.
+  photo?: { image: ImageSource; isPhoto?: boolean };
   mapMarker: MapMarker;
 };
 
@@ -95,10 +107,15 @@ type FlipBookProps = {
   // Spread across the first two pages you see after opening the cover.
   map: BookMap;
   pageWidth: number;
+  // One page at a time (for a phone held upright): each location and character gets a single
+  // page holding both halves of their spread, and only the right-hand page of the book shows.
+  single?: boolean;
+  // Defaults to the shape of a sheet of letter paper. A single-page book fills the screen instead.
+  pageHeight?: number;
 };
 
-export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
-  const pageHeight = pageWidth * PAGE_ASPECT;
+export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fixedHeight }: FlipBookProps) {
+  const pageHeight = fixedHeight ?? pageWidth * PAGE_ASPECT;
   const coverWidth = pageWidth + COVER_MARGIN_X;
   const coverHeight = pageHeight + COVER_MARGIN_Y * 2;
   // The round buttons are full size on pages 300 wide or more, and shrink on smaller (phone) pages
@@ -114,6 +131,10 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
   // Every character on a location page gets their own spread after the locations, in order of
   // first appearance.
   const characterIds = [...new Set(pages.flatMap((page) => page.characters))];
+  // How many sheets the book has: the two covers, plus the paper pages built below (the map, each
+  // location and character, and "The End"; two sides to a sheet, or one in a single-page book).
+  const sideCount = 2 + (pages.length + characterIds.length) * (single ? 1 : 2);
+  const leafCount = 2 + (single ? sideCount : Math.ceil(sideCount / 2));
 
   // The open spread (value of `current`) showing the given side (0 is the map's right half) on
   // its left. Sides on a leaf's front show on the right of spread N, backs on the left of
@@ -122,6 +143,11 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
   // The left-hand side of each location's and each character's spread.
   const locationSide = (pageIndex: number) => 1 + pageIndex * 2;
   const characterSide = (id: CharacterId) => 1 + pages.length * 2 + characterIds.indexOf(id) * 2;
+  // In a single-page book every side is the front of its own leaf, after the cover: the map is
+  // leaf 1, then one leaf per location, then one per character. A leaf's front shows while
+  // `current` equals its index.
+  const singleLocationLeaf = (pageIndex: number) => 2 + pageIndex;
+  const singleCharacterLeaf = (id: CharacterId) => 2 + pages.length + characterIds.indexOf(id);
 
   // Turns one leaf from spread `from` to the next one in `direction`.
   const turnOnce = (from: number, direction: 1 | -1, onDone?: (spread: number) => void) => {
@@ -158,12 +184,14 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
       else jumpBetween(from, target);
     };
     if (current === 0) turnOnce(current, 1, (opened) => opened !== target && travel(opened));
-    else if (current === leaves.length) turnOnce(current, -1, (opened) => opened !== target && travel(opened));
+    else if (current === leafCount) turnOnce(current, -1, (opened) => opened !== target && travel(opened));
     else travel(current);
   };
 
-  const goToPage = (pageIndex: number) => riffleTo(spreadForLeftSide(locationSide(pageIndex)));
-  const goToCharacter = (id: CharacterId) => riffleTo(spreadForLeftSide(characterSide(id)));
+  const goToPage = (pageIndex: number) =>
+    riffleTo(single ? singleLocationLeaf(pageIndex) : spreadForLeftSide(locationSide(pageIndex)));
+  const goToCharacter = (id: CharacterId) =>
+    riffleTo(single ? singleCharacterLeaf(id) : spreadForLeftSide(characterSide(id)));
 
   const renderMapHalf = (side: 'left' | 'right') => {
     const markers: PlacedMarker[] = pages.map((page, pageIndex) => ({
@@ -182,6 +210,44 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
       />
     );
   };
+
+  const appearsIn = (id: CharacterId) =>
+    pages.flatMap((page, pageIndex) => (page.characters.includes(id) ? [{ name: page.location, pageIndex }] : []));
+
+  // A single-page book: the map, then one page per location and one per character, each on the
+  // front of its own leaf (the backs are blank, and never seen), then "The End".
+  const singleSides: ReactNode[] = [
+    <ScrollingMap
+      key="map"
+      map={map}
+      markers={pages.map((page, pageIndex) => ({ marker: page.mapMarker, pageIndex }))}
+      width={pageWidth}
+      height={pageHeight}
+      interactive={!busy}
+      onSelect={goToPage}
+    />,
+    ...pages.map((page, index) => (
+      <SinglePage key={`location-${index}`} number={1 + index} pageWidth={pageWidth}>
+        <LocationHeader page={page} map={map} pageWidth={pageWidth} />
+        <View style={styles.singleGap} />
+        <LocationDetails page={page} pageWidth={pageWidth} interactive={!busy} onOpenCharacter={goToCharacter} />
+      </SinglePage>
+    )),
+    ...characterIds.map((id, index) => (
+      <SinglePage key={`character-${id}`} number={1 + pages.length + index} pageWidth={pageWidth}>
+        <CharacterHeader id={id} pageWidth={pageWidth} />
+        <View style={styles.singleGap} />
+        <CharacterDetails
+          id={id}
+          appearsIn={appearsIn(id)}
+          pageWidth={pageWidth}
+          interactive={!busy}
+          onOpenLocation={goToPage}
+        />
+      </SinglePage>
+    )),
+    <EndPage key="end" pageWidth={pageWidth} />,
+  ];
 
   // Page sides in reading order after the cover: the map's right half, then two pages per
   // location (photo on the left, description on the right), two per character (bust on the
@@ -213,9 +279,7 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
       <CharacterInfoPage
         key={`info-${id}`}
         id={id}
-        appearsIn={pages.flatMap((page, pageIndex) =>
-          page.characters.includes(id) ? [{ name: page.location, pageIndex }] : [],
-        )}
+        appearsIn={appearsIn(id)}
         number={characterSide(id) + 1}
         pageWidth={pageWidth}
         interactive={!busy}
@@ -231,7 +295,10 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
       kind: 'cover',
       front: <FrontCover />,
       // The left half of the map is printed on the inside of the front cover, lined up with the page.
-      back: (
+      // (A single-page book never shows it.)
+      back: single ? (
+        <InsideCover spine="right" />
+      ) : (
         <InsideCover spine="right">
           <View style={[styles.coverMap, { top: COVER_MARGIN_Y, width: pageWidth, height: pageHeight }]}>
             <PagePaper side="left" />
@@ -243,14 +310,20 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
       backSpineShadow: true,
     },
   ];
-  for (let i = 0; i < sides.length; i += 2) {
-    leaves.push({
-      kind: 'page',
-      front: sides[i],
-      back: sides[i + 1],
-      frontSpineShadow: true,
-      backSpineShadow: true,
-    });
+  if (single) {
+    for (const side of singleSides) {
+      leaves.push({ kind: 'page', front: side, back: null, frontSpineShadow: true, backSpineShadow: true });
+    }
+  } else {
+    for (let i = 0; i < sides.length; i += 2) {
+      leaves.push({
+        kind: 'page',
+        front: sides[i],
+        back: sides[i + 1],
+        frontSpineShadow: true,
+        backSpineShadow: true,
+      });
+    }
   }
   leaves.push({
     kind: 'cover',
@@ -267,20 +340,25 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
     backSpineShadow: false,
   });
 
+  if (__DEV__ && leaves.length !== leafCount) console.warn(`FlipBook: counted ${leafCount} sheets but built ${leaves.length}`);
   const isClosedFront = current === 0;
   const isClosedBack = current === leaves.length;
+  // The furthest the book turns. A single-page book stops on "The End", the last page: the back
+  // cover stays down underneath it.
+  const lastSpread = single ? leaves.length - 2 : leaves.length;
 
-  // A closed book only fills one half of the spread, so slide it to the middle.
+  // A closed book only fills one half of the spread, so slide it to the middle. A single-page
+  // book only ever shows its right half, so it stays put.
   const shift = useSharedValue(0);
   useEffect(() => {
-    const target = isClosedFront ? -coverWidth / 2 : isClosedBack ? coverWidth / 2 : 0;
+    const target = single ? 0 : isClosedFront ? -coverWidth / 2 : isClosedBack ? coverWidth / 2 : 0;
     shift.value = withTiming(target, { duration: TURN_DURATION, easing: TURN_EASING });
-  }, [isClosedFront, isClosedBack, coverWidth, shift]);
+  }, [single, isClosedFront, isClosedBack, coverWidth, shift]);
   const shiftStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shift.value }] }));
 
   const turn = (direction: 1 | -1) => {
     const next = current + direction;
-    if (busy || next < 0 || next > leaves.length) return;
+    if (busy || next < 0 || next > lastSpread) return;
     turnOnce(current, direction);
   };
 
@@ -312,8 +390,47 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
     return index < current ? index + 1 : leaves.length - index;
   };
 
-  return (
-    <Animated.View style={[{ width: coverWidth * 2, height: coverHeight }, shiftStyle]}>
+  const buttons = (
+    <>
+      <ArrowButton
+        label="‹"
+        accessibilityLabel="Previous page"
+        hidden={isClosedFront}
+        disabled={busy}
+        onPress={() => turn(-1)}
+        scale={buttonScale}
+        style={styles.arrowLeft}
+      />
+      <ArrowButton
+        label="›"
+        accessibilityLabel="Next page"
+        hidden={current === lastSpread}
+        disabled={busy}
+        onPress={() => turn(1)}
+        scale={buttonScale}
+        style={styles.arrowRight}
+      />
+      {/* Back to the map, which is the first spread after the cover. */}
+      <ArrowButton
+        label={<HomeIcon />}
+        accessibilityLabel="Back to the map"
+        hidden={isClosedFront || current === MAP_SPREAD}
+        disabled={busy}
+        onPress={() => riffleTo(MAP_SPREAD)}
+        scale={buttonScale}
+        style={styles.homeButton}
+      />
+    </>
+  );
+
+  const book = (
+    <Animated.View
+      style={[
+        { width: coverWidth * 2, height: coverHeight },
+        // A single-page book hides its left half outside the window it's shown through.
+        single && { position: 'absolute', left: -coverWidth },
+        shiftStyle,
+      ]}>
       {leaves.map((leaf, index) => (
         <TurningLeaf
           key={index}
@@ -342,35 +459,18 @@ export function FlipBook({ pages, map, pageWidth }: FlipBookProps) {
         />
       )}
 
-      <ArrowButton
-        label="‹"
-        accessibilityLabel="Previous page"
-        hidden={isClosedFront}
-        disabled={busy}
-        onPress={() => turn(-1)}
-        scale={buttonScale}
-        style={styles.arrowLeft}
-      />
-      <ArrowButton
-        label="›"
-        accessibilityLabel="Next page"
-        hidden={isClosedBack}
-        disabled={busy}
-        onPress={() => turn(1)}
-        scale={buttonScale}
-        style={styles.arrowRight}
-      />
-      {/* Back to the map, which is the first spread after the cover. */}
-      <ArrowButton
-        label={<HomeIcon />}
-        accessibilityLabel="Back to the map"
-        hidden={isClosedFront || current === MAP_SPREAD}
-        disabled={busy}
-        onPress={() => riffleTo(MAP_SPREAD)}
-        scale={buttonScale}
-        style={styles.homeButton}
-      />
+      {!single && buttons}
     </Animated.View>
+  );
+
+  if (!single) return book;
+  // Shown through a window the size of one cover, over the book's right half. A turning page
+  // curls away past the window's left edge.
+  return (
+    <View style={[styles.singleWindow, { width: coverWidth, height: coverHeight }]}>
+      {book}
+      {buttons}
+    </View>
   );
 }
 
@@ -859,35 +959,46 @@ type LocationPageProps = {
   pageWidth: number;
 };
 
-// Left page of a location: its photo (or a close-up of the map) at the top, taped in like a
-// print, then the combined name, the Lord of the Rings name, and the real Walla Walla place.
+// Left page of a location: its drawing (or a close-up of the map) at the top, straight on the
+// paper, then the combined name, the Lord of the Rings name, and the real Walla Walla place.
 function LocationPhotoPage({ page, map, number, pageWidth }: LocationPageProps & { map: BookMap }) {
-  const tape = { width: pageWidth * 0.16, height: pageWidth * 0.045 };
-  const printWidth = pageWidth * 0.8;
+  return (
+    <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
+      <LocationHeader page={page} map={map} pageWidth={pageWidth} />
+      {/* Pushes the page number to the bottom, keeping a little space above it on full pages. */}
+      <View style={styles.pushDown} />
+      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+        {number}
+      </Text>
+    </View>
+  );
+}
+
+// The top of a location: the left page of its spread, or the top of its single phone page.
+function LocationHeader({ page, map, pageWidth }: { page: BookPage; map: BookMap; pageWidth: number }) {
+  const pictureWidth = pageWidth * 0.8;
   // Longer names get smaller type, so they fit in two lines of the wide Cinzel capitals.
   const titleSize = pageWidth * (page.location.length > 20 ? 0.055 : page.location.length > 12 ? 0.062 : 0.075);
   return (
-    <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
-      <View style={styles.print}>
+    <>
+      <View>
         {page.photo ? (
           <Image
             source={page.photo.image}
-            contentFit="cover"
+            contentFit={page.photo.isPhoto ? 'cover' : 'contain'}
             accessibilityLabel={page.location}
-            style={styles.photo}
+            style={[styles.photo, page.photo.isPhoto && styles.realPhoto]}
           />
         ) : (
           <MapInset
             map={map}
             marker={page.mapMarker}
-            width={printWidth - 12}
-            height={(printWidth - 12) / 1.35}
+            width={pictureWidth}
+            height={pictureWidth / PICTURE_ASPECT}
             zoom={3}
             bare
           />
         )}
-        <View style={[styles.tape, tape, { left: -tape.width * 0.3, transform: [{ rotate: '-35deg' }] }]} />
-        <View style={[styles.tape, tape, { right: -tape.width * 0.3, transform: [{ rotate: '35deg' }] }]} />
       </View>
       <Text style={[styles.pageTitle, { fontSize: titleSize, marginTop: pageWidth * 0.045 }]}>
         {page.location}
@@ -898,12 +1009,7 @@ function LocationPhotoPage({ page, map, number, pageWidth }: LocationPageProps &
       </Text>
       <View style={styles.rule} />
       <Text style={[styles.wallaWallaName, { fontSize: pageWidth * 0.038 }]}>{page.wallaWallaName}</Text>
-      {/* Pushes the page number to the bottom, keeping a little space above it on full pages. */}
-      <View style={styles.pushDown} />
-      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
-        {number}
-      </Text>
-    </View>
+    </>
   );
 }
 
@@ -915,6 +1021,22 @@ type LocationTextPageProps = LocationPageProps & {
 // Right page of a location: a short description at the top, the characters as round portraits
 // running left to right like lines of text, and the score at the bottom.
 function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacter }: LocationTextPageProps) {
+  return (
+    <View
+      style={[
+        styles.pageInner,
+        { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.12, paddingBottom: pageWidth * 0.07 },
+      ]}>
+      <LocationDetails page={page} pageWidth={pageWidth} interactive={interactive} onOpenCharacter={onOpenCharacter} />
+      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+        {number}
+      </Text>
+    </View>
+  );
+}
+
+// The rest of a location: the right page of its spread, or the bottom of its single phone page.
+function LocationDetails({ page, pageWidth, interactive, onOpenCharacter }: Omit<LocationTextPageProps, 'number'>) {
   // Pictures are 0.15 of the page's width. The row of portraits reaches halfway into the page's
   // side margins (0.9 wide), so five fit across and even the biggest casts take two rows. Each
   // slot is a hair under a fifth, so rounding never pushes the fifth onto the next row.
@@ -925,11 +1047,7 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
   // or long names break mid-word.
   const nameSize = Math.min(Math.max(10, pageWidth * 0.022), pageWidth * 0.03);
   return (
-    <View
-      style={[
-        styles.pageInner,
-        { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.12, paddingBottom: pageWidth * 0.07 },
-      ]}>
+    <>
       <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.06 }]}>
         {page.description}
       </Text>
@@ -967,6 +1085,17 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
           </Text>
         ))}
       </View>
+    </>
+  );
+}
+
+// Left page of a character: their sketch at the top, drawn straight onto the page like a
+// sketchbook, then their name, race, title, and home.
+function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number: number; pageWidth: number }) {
+  return (
+    <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
+      <CharacterHeader id={id} pageWidth={pageWidth} />
+      <View style={styles.pushDown} />
       <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
         {number}
       </Text>
@@ -974,13 +1103,12 @@ function LocationTextPage({ page, number, pageWidth, interactive, onOpenCharacte
   );
 }
 
-// Left page of a character: their sketch at the top, drawn straight onto the page like a
-// sketchbook, then their name, race, title, and home.
-function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number: number; pageWidth: number }) {
+// The top of a character: the left page of their spread, or the top of their single phone page.
+function CharacterHeader({ id, pageWidth }: { id: CharacterId; pageWidth: number }) {
   const character = lookUpCharacter(id);
   const homeSize = pageWidth * 0.038;
   return (
-    <View style={[styles.pageInner, { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.1 }]}>
+    <>
       <Bust id={id} />
       <Text style={[styles.pageTitle, { fontSize: pageWidth * 0.072, marginTop: pageWidth * 0.05 }]}>
         {character.name}
@@ -995,11 +1123,7 @@ function CharacterBustPage({ id, number, pageWidth }: { id: CharacterId; number:
       <Text style={[styles.homeName, { fontSize: homeSize, marginTop: character.title ? homeSize * 0.4 : 0 }]}>
         Home: {character.home}
       </Text>
-      <View style={styles.pushDown} />
-      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
-        {number}
-      </Text>
-    </View>
+    </>
   );
 }
 
@@ -1016,6 +1140,29 @@ type CharacterInfoPageProps = {
 // Right page of a character: a short bio at the top, and at the bottom the places they appear,
 // each a quick link to that location's pages.
 function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOpenLocation }: CharacterInfoPageProps) {
+  return (
+    <View
+      style={[
+        styles.pageInner,
+        { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.12, paddingBottom: pageWidth * 0.07 },
+      ]}>
+      <CharacterDetails
+        id={id}
+        appearsIn={appearsIn}
+        pageWidth={pageWidth}
+        interactive={interactive}
+        onOpenLocation={onOpenLocation}
+      />
+      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+        {number}
+      </Text>
+    </View>
+  );
+}
+
+// The rest of a character: the right page of their spread, or the bottom of their single phone
+// page.
+function CharacterDetails({ id, appearsIn, pageWidth, interactive, onOpenLocation }: Omit<CharacterInfoPageProps, 'number'>) {
   const character = lookUpCharacter(id);
   // Only items with a sketch are shown. The rest stay in src/constants/characters.ts.
   const items = character.items.split(', ').filter((item) => itemImage(item, id));
@@ -1024,11 +1171,7 @@ function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOp
   const featuredItem = id === 'sauron' ? items[0] : undefined;
   const featuredImage = featuredItem && itemImage(featuredItem, id);
   return (
-    <View
-      style={[
-        styles.pageInner,
-        { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.12, paddingBottom: pageWidth * 0.07 },
-      ]}>
+    <>
       <Text style={[styles.pageBody, { fontSize: pageWidth * 0.04, lineHeight: pageWidth * 0.06 }]}>
         {character.about}
       </Text>
@@ -1036,7 +1179,13 @@ function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOp
       {featuredItem ? (
         // The item fills the space between the bio and the places, with its name underneath.
         <View style={[styles.featuredItem, { marginVertical: pageWidth * 0.03 }]}>
-          {featuredImage && <Image source={featuredImage} contentFit="contain" style={styles.featuredImage} />}
+          {featuredImage && (
+            <Image
+              source={featuredImage}
+              contentFit="contain"
+              style={[styles.featuredImage, { minHeight: pageWidth * 0.4 }]}
+            />
+          )}
           <Text style={[styles.pageTitle, { fontSize: pageWidth * 0.065, marginTop: pageWidth * 0.02 }]}>
             {featuredItem}
           </Text>
@@ -1083,10 +1232,30 @@ function CharacterInfoPage({ id, appearsIn, number, pageWidth, interactive, onOp
           ))}
         </View>
       </View>
-      <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
-        {number}
-      </Text>
-    </View>
+    </>
+  );
+}
+
+// One tall page on a phone held upright, holding both pages of a spread one after the other. It
+// scrolls if a short screen can't fit everything.
+function SinglePage({ number, pageWidth, children }: { number?: number; pageWidth: number; children: ReactNode }) {
+  return (
+    <ScrollView
+      style={StyleSheet.absoluteFill}
+      contentContainerStyle={[
+        styles.singlePage,
+        // Extra room at the bottom so a page that scrolls can bring its last line clear of the
+        // home button.
+        { padding: pageWidth * 0.1, paddingTop: pageWidth * 0.12, paddingBottom: pageWidth * 0.07 + 44 },
+      ]}
+      showsVerticalScrollIndicator={false}>
+      {children}
+      {number !== undefined && (
+        <Text style={[styles.pageNumber, styles.pageNumberAfterScore, { fontSize: pageWidth * 0.04 }]}>
+          {number}
+        </Text>
+      )}
+    </ScrollView>
   );
 }
 
@@ -1259,26 +1428,26 @@ const styles = StyleSheet.create({
   pageInner: {
     flex: 1,
   },
+  singlePage: {
+    flexGrow: 1,
+  },
+  singleWindow: {
+    overflow: 'hidden',
+  },
+  // Space between the two halves of a spread when they share one phone page.
+  singleGap: {
+    height: 24,
+  },
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  print: {
-    transform: [{ rotate: '-1.5deg' }],
-    borderWidth: 6,
-    borderColor: '#fbf6ea',
-    backgroundColor: '#fbf6ea',
-    boxShadow: '0 3px 8px rgba(59, 42, 26, 0.4)',
-  },
   photo: {
     width: '100%',
-    aspectRatio: 1.35,
+    aspectRatio: PICTURE_ASPECT,
   },
-  tape: {
-    position: 'absolute',
-    top: -6,
-    backgroundColor: 'rgba(236, 226, 196, 0.8)',
-    boxShadow: '0 1px 2px rgba(59, 42, 26, 0.25)',
+  realPhoto: {
+    opacity: 0.8,
   },
   lotrName: {
     fontFamily: Fonts.serif,

@@ -27,13 +27,12 @@ const PHONE_MAX_SIDE = 600;
 export default function HomeScreen() {
   // The book shares the screen with directions along the top and a mini map on the right.
   const window = useWindowDimensions();
-  // On a phone held sideways, the book takes the whole screen: the directions and the mini map
-  // are left out (the book's home button still goes back to the map). On a phone held upright,
-  // the book runs the full width, with the directions above it and the mini map below.
+  // On a phone the book takes the whole screen: the directions and the mini map are left out (the
+  // book's home button still goes back to the map). Held sideways it's the usual two-page book;
+  // held upright it's a single-page book, each page holding both halves of a spread.
   const phone = Math.min(window.width, window.height) < PHONE_MAX_SIDE;
   const upright = phone && window.height > window.width;
-  const sideways = phone && !upright;
-  const sideWidth = upright ? window.width * 0.5 : clamp(window.width * 0.16, 140, 280);
+  const sideWidth = clamp(window.width * 0.16, 140, 280);
   const directionsSize = clamp(window.width * 0.012, 12, 18);
 
   // Measured on the client: the web build is pre-rendered without knowing the window size.
@@ -43,30 +42,42 @@ export default function HomeScreen() {
     setArea({ width, height });
   };
 
-  const pageWidth =
-    area &&
-    Math.max(
-      120,
-      Math.min(
-        (area.width - CoverExtraWidth) / 2,
-        (area.height - CoverExtraHeight) / PAGE_ASPECT,
-      ),
-    );
+  // A single page is as wide as the screen allows (its cover sticks out on one side only) and as
+  // tall as the screen, rather than letter-shaped.
+  const singlePage = upright && area && {
+    width: area.width - CoverExtraWidth / 2,
+    height: area.height - CoverExtraHeight,
+  };
+  const pageWidth = singlePage
+    ? singlePage.width
+    : area &&
+      Math.max(
+        120,
+        Math.min((area.width - CoverExtraWidth) / 2, (area.height - CoverExtraHeight) / PAGE_ASPECT),
+      );
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={[styles.safeArea, phone && styles.safeAreaPhone]}>
-        {!sideways && (
+        {!phone && (
           <View style={styles.directions}>
             <Directions fontSize={directionsSize} />
           </View>
         )}
-        <View style={[styles.main, upright && styles.mainUpright]}>
+        <View style={styles.main}>
           <View style={[styles.bookArea, phone && styles.bookAreaPhone]} onLayout={onLayout}>
-            {pageWidth !== null && <FlipBook pages={LOCATIONS} map={MAP} pageWidth={pageWidth} />}
+            {pageWidth !== null && (
+              <FlipBook
+                pages={LOCATIONS}
+                map={MAP}
+                pageWidth={pageWidth}
+                single={upright}
+                pageHeight={singlePage ? singlePage.height : undefined}
+              />
+            )}
           </View>
-          {!sideways && (
-            <View style={[styles.side, upright && styles.sideUpright, { width: sideWidth }]}>
+          {!phone && (
+            <View style={[styles.side, { width: sideWidth }]}>
               <MiniMap map={MAP} width={sideWidth - Spacing.four} />
             </View>
           )}
@@ -99,9 +110,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
   },
-  mainUpright: {
-    flexDirection: 'column',
-  },
   bookArea: {
     flex: 1,
     alignItems: 'center',
@@ -116,9 +124,5 @@ const styles = StyleSheet.create({
     zIndex: 1,
     alignItems: 'flex-end',
     justifyContent: 'center',
-  },
-  sideUpright: {
-    alignSelf: 'center',
-    paddingBottom: Spacing.three,
   },
 });

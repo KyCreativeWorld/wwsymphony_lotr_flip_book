@@ -106,11 +106,13 @@ These drive the movement:
 
 ## 3. Calibrate
 
-Click **Calibrate** in the panel. Stand where visitors will. Each step counts down 3 seconds while you hold still:
+Click **Calibrate** in the panel. Stand where visitors will. There are three steps, and each one goes the same way: 5 seconds to **get ready** (read the instruction and get into position), then 3 seconds to **hold still**, then a moment showing **Got it** before the next step. The whole calibration takes about half a minute.
 
-1. Point the object at the centre of the screen.
-2. Hold it out to your left, and point it at the top-left corner.
-3. Hold it out to your right, and point it at the bottom-right corner.
+1. Point the object at the glowing circle in the middle of the screen.
+2. Hold it out to your left, and point it at the glowing circle in the top-left corner.
+3. Hold it out to your right, and point it at the glowing circle in the bottom-right corner.
+
+If something goes wrong, the card says what and offers **Try again**. Press Esc to cancel at any time. To change the timings, edit `CALIBRATION_READY` and `CALIBRATION_HOLD` in `src/components/motion-control.web.tsx`.
 
 The centre sets where "straight ahead" is. The two sides set which way is left, right, up and down, whichever way up the tracker is mounted. How far the cursor and swipes move comes from `setup.ts`, so after changing the distance there is no need to recalibrate, only to reload the page.
 
