@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { type BookMap } from '@/components/book-map';
 import { Directions } from '@/components/directions';
 import { FlipBook, PAGE_ASPECT } from '@/components/flip-book';
-import { MiniMap } from '@/components/mini-map';
 import { MotionControl } from '@/components/motion-control';
 import { LOCATIONS } from '@/constants/locations';
 import { BottomTabInset, Spacing } from '@/constants/theme';
@@ -25,14 +24,13 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 const PHONE_MAX_SIDE = 600;
 
 export default function HomeScreen() {
-  // The book shares the screen with directions along the top and a mini map on the right.
+  // The book fills the screen below a line of directions.
   const window = useWindowDimensions();
-  // On a phone the book takes the whole screen: the directions and the mini map are left out (the
-  // book's home button still goes back to the map). Held sideways it's the usual two-page book;
-  // held upright it's a single-page book, each page holding both halves of a spread.
+  // On a phone the book takes the whole screen: the keyboard directions are left out. Held
+  // sideways it's the usual two-page book; held upright it's a single-page book, each page
+  // holding both halves of a spread.
   const phone = Math.min(window.width, window.height) < PHONE_MAX_SIDE;
   const upright = phone && window.height > window.width;
-  const sideWidth = clamp(window.width * 0.16, 140, 280);
   const directionsSize = clamp(window.width * 0.012, 12, 18);
 
   // Measured on the client: the web build is pre-rendered without knowing the window size.
@@ -64,22 +62,15 @@ export default function HomeScreen() {
             <Directions fontSize={directionsSize} />
           </View>
         )}
-        <View style={styles.main}>
-          <View style={[styles.bookArea, phone && styles.bookAreaPhone]} onLayout={onLayout}>
-            {pageWidth !== null && (
-              <FlipBook
-                pages={LOCATIONS}
-                map={MAP}
-                pageWidth={pageWidth}
-                single={upright}
-                pageHeight={singlePage ? singlePage.height : undefined}
-              />
-            )}
-          </View>
-          {!phone && (
-            <View style={[styles.side, { width: sideWidth }]}>
-              <MiniMap map={MAP} width={sideWidth - Spacing.four} />
-            </View>
+        <View style={[styles.bookArea, phone && styles.bookAreaPhone]} onLayout={onLayout}>
+          {pageWidth !== null && (
+            <FlipBook
+              pages={LOCATIONS}
+              map={MAP}
+              pageWidth={pageWidth}
+              single={upright}
+              pageHeight={singlePage ? singlePage.height : undefined}
+            />
           )}
         </View>
       </SafeAreaView>
@@ -106,10 +97,6 @@ const styles = StyleSheet.create({
   directions: {
     paddingTop: Spacing.three,
   },
-  main: {
-    flex: 1,
-    flexDirection: 'row',
-  },
   bookArea: {
     flex: 1,
     alignItems: 'center',
@@ -118,11 +105,5 @@ const styles = StyleSheet.create({
   },
   bookAreaPhone: {
     marginVertical: Spacing.one,
-  },
-  side: {
-    // Above the book, so the mini map can grow over it on hover.
-    zIndex: 1,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
   },
 });

@@ -362,20 +362,27 @@ export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fi
     turnOnce(current, direction);
   };
 
-  // On the web, the left and right arrow keys turn the pages too.
+  // On the web, the left and right arrow keys turn the pages too, and M or Space goes back to the
+  // map.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const onKeyDown = (event: KeyboardEvent) => {
-      // Ignore held-down keys so one press turns one page.
-      if (event.repeat) return;
+      // Ignore held-down keys so one press turns one page, and keys typed into a text box (such as
+      // the tracker panel's addresses).
+      if (event.repeat || (event.target as HTMLElement | null)?.matches?.('input, textarea')) return;
       if (event.key === 'ArrowRight') turn(1);
       else if (event.key === 'ArrowLeft') turn(-1);
+      else if (event.key === 'm' || event.key === 'M' || event.key === ' ') {
+        // Space would otherwise scroll the page or press whatever button has focus.
+        event.preventDefault();
+        riffleTo(MAP_SPREAD);
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
-  // Motion tracker swipes turn the pages, and the mini map beside the book returns to the map.
+  // Motion tracker swipes turn the pages.
   useEffect(() =>
     onBookCommand((command) => {
       if (command === 'next') turn(1);
@@ -383,6 +390,10 @@ export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fi
       else riffleTo(MAP_SPREAD);
     }),
   );
+
+  // The covers, the sheet being turned, and the two sheets on each side of the open spread.
+  const isDrawn = (index: number) =>
+    index === 0 || index === leaves.length - 1 || index === turning || (index >= current - 2 && index <= current + 1);
 
   const getZIndex = (index: number) => {
     if (index === turning) return leaves.length + 1;
@@ -431,20 +442,26 @@ export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fi
         single && { position: 'absolute', left: -coverWidth },
         shiftStyle,
       ]}>
-      {leaves.map((leaf, index) => (
-        <TurningLeaf
-          key={index}
-          leaf={leaf}
-          turned={index < current}
-          duration={turnDuration}
-          curl={leaf.kind === 'page' && index === turning}
-          zIndex={getZIndex(index)}
-          left={coverWidth}
-          top={leaf.kind === 'cover' ? 0 : COVER_MARGIN_Y}
-          width={leaf.kind === 'cover' ? coverWidth : pageWidth}
-          height={leaf.kind === 'cover' ? coverHeight : pageHeight}
-        />
-      ))}
+      {/* Only the sheets near the open page are drawn. Phones run out of memory if every sheet,
+          each its own 3D layer full of pictures, is drawn at once (iPhone Safari then reloads
+          the page over and over). The rest are hidden under these anyway. The covers always
+          stay, since their leather edges frame the open book. */}
+      {leaves.map((leaf, index) =>
+        isDrawn(index) ? (
+          <TurningLeaf
+            key={index}
+            leaf={leaf}
+            turned={index < current}
+            duration={turnDuration}
+            curl={leaf.kind === 'page' && index === turning}
+            zIndex={getZIndex(index)}
+            left={coverWidth}
+            top={leaf.kind === 'cover' ? 0 : COVER_MARGIN_Y}
+            width={leaf.kind === 'cover' ? coverWidth : pageWidth}
+            height={leaf.kind === 'cover' ? coverHeight : pageHeight}
+          />
+        ) : null,
+      )}
 
       {jump && (
         <JumpFlip

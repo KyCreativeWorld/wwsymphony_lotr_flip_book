@@ -8,7 +8,7 @@ The flip book can be driven by a handheld electromagnetic tracker (Polhemus, tra
 | Click | Hold the cursor still on a link, marker or portrait for 1 second |
 | Next page | Swipe from right to left |
 | Previous page | Swipe from left to right |
-| Back to the map | Hold the cursor on the mini map beside the book |
+| Back to the map | Hold the cursor on the home button in the book's bottom-left corner |
 
 ## 1. Get readings into the book
 

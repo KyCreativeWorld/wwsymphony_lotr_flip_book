@@ -28,7 +28,7 @@ import { parseTrackerLine, type TrackerSample } from '@/motion/tracker-sample';
 // - Point the object at the screen to move the gold ring cursor.
 // - Hold the cursor over anything clickable for a second to click it.
 // - Swipe right to left for the next page, left to right for the previous one.
-// - Hold the cursor on the mini map beside the book to return to the map.
+// - Hold the cursor on the book's home button (bottom left) to return to the map.
 //
 // A small button in the bottom-right corner (or the T key) opens a panel for connecting the
 // tracker and calibrating it. Settings are remembered in this browser, and the book reconnects

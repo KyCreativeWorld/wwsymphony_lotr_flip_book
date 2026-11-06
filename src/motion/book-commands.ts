@@ -1,5 +1,4 @@
-// Commands sent to the book from outside it: motion tracker swipes and the mini map beside the
-// book. The book listens for these alongside its arrow keys, so other code doesn't need to know
+// Commands sent to the book from outside it, such as motion tracker swipes. The book listens for these alongside its arrow keys, so other code doesn't need to know
 // how the book turns its pages.
 export type BookCommand = 'next' | 'previous' | 'map';
 

@@ -4,12 +4,10 @@ import { Fonts } from '@/constants/theme';
 
 const GOLD = '#e8c877';
 
-// How to use the book with the handheld object, shown in a row above it.
+// How to get around the book with the keyboard, shown in a row above it.
 const STEPS = [
-  { gesture: 'Point at the screen', result: 'to move the ring' },
-  { gesture: 'Hold the ring still', result: 'on anything to select it' },
-  { gesture: 'Swipe right to left', result: 'for the next page' },
-  { gesture: 'Swipe left to right', result: 'for the previous page' },
+  { gesture: 'Left and right arrow keys', result: 'to flip the pages' },
+  { gesture: 'M or Space', result: 'to go back to the map' },
 ];
 
 export function Directions({ fontSize }: { fontSize: number }) {
