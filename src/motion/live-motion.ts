@@ -1,4 +1,5 @@
-import { type TrackerSample, type Vector } from '@/motion/tracker-sample';
+import { eulerMatrix, quaternionMatrix, type Matrix, type Vector } from '@/motion/rotation';
+import { type TrackerSample } from '@/motion/tracker-sample';
 
 // Readings from a LiveMotion motion server, the class's tracking server that
 // motioncapture/js/LiveMotion.js and ClientApp.js connect to. The server streams JSON over a
@@ -27,18 +28,22 @@ function quaternionAngles({ x, y, z, w }: { x: number; y: number; z: number; w: 
   ];
 }
 
-// Which way a prop points, if it says. Servers name this differently, so a few common shapes are
-// accepted: a quaternion {x, y, z, w}, or angles {azimuth, elevation, roll} / {yaw, pitch, roll}.
-function propOrientation(prop: Fields): Vector | undefined {
+// Which way a prop points, if it says: its angles for the readout, and its rotation for the
+// pointing maths. Servers name this differently, so a few common shapes are accepted: a
+// quaternion {x, y, z, w}, or angles {azimuth, elevation, roll} / {yaw, pitch, roll}.
+function propOrientation(prop: Fields): { orientation: Vector; rotation: Matrix } | undefined {
   for (const key of ['rot', 'rotation', 'quat', 'quaternion', 'ori', 'orientation']) {
     const value = prop[key];
     if (!isObject(value)) continue;
     if ('w' in value) {
       const [x, y, z, w] = [value.x, value.y, value.z, value.w].map(toNumber);
-      if (allFinite([x, y, z, w])) return quaternionAngles({ x, y, z, w });
+      // Straight from the quaternion, without going through angles, which jump near ±180°.
+      if (allFinite([x, y, z, w])) {
+        return { orientation: quaternionAngles({ x, y, z, w }), rotation: quaternionMatrix({ x, y, z, w }) };
+      }
     }
     const angles = [value.azimuth ?? value.yaw, value.elevation ?? value.pitch, value.roll ?? 0].map(toNumber);
-    if (allFinite(angles)) return angles as Vector;
+    if (allFinite(angles)) return { orientation: angles as Vector, rotation: eulerMatrix(angles as Vector) };
   }
   return undefined;
 }
@@ -50,5 +55,10 @@ export function liveMotionSample(data: Fields, time: number): TrackerSample | nu
   if (!isObject(prop) || !isObject(prop.pos)) return null;
   const position = [prop.pos.x, prop.pos.y, prop.pos.z].map(toNumber);
   if (!allFinite(position)) return null;
-  return { position: position as Vector, orientation: propOrientation(prop), time };
+  return {
+    position: position as Vector,
+    ...propOrientation(prop),
+    objectCount: (data.props as unknown[]).length,
+    time,
+  };
 }

@@ -20,7 +20,7 @@ There are three ways to connect.
 
 To check the server on its own, open `motioncapture/motioncapture.html` in a browser. It shows the connection, the readings per second, and the latest prop exactly as the server sends it. If the panel shows a position but no `angles`, the server's rotation field has a name the book doesn't recognise yet. In that case, send a copy of what the test page shows.
 
-LiveMotion may use different units from the tracker's own software, for example metres instead of inches. Set `TRACKER_DISTANCE` and `SCREEN_WIDTH` in `src/motion/setup.ts` in the same units the panel's `position` shows.
+LiveMotion may use different units from the tracker's own software, for example metres instead of inches. That's fine: calibration measures everything in whatever units arrive. The panel also says how many objects LiveMotion is tracking. The book follows the first, so if it says more than one, the cursor can jump between them.
 
 **Option A: the bridge.** This works with any tracker and any browser. Run the tracker's own program so it prints one reading per line, and pipe its output into the bridge:
 
@@ -92,17 +92,22 @@ x y z
 - **Position only:** if the tracker reports just `x y z`, the cursor follows where the object is instead of where it points.
 - **Other lines:** anything else, such as headers, is ignored.
 
-## 2. Measure the setup
+## 2. Tell the book which way the tracker faces
 
-The tracker's base sits at the screen. Set two numbers in `src/motion/setup.ts`, in the tracker's position units (Polhemus trackers report inches by default):
+The tracker's base sits at the screen (anywhere near it; it doesn't have to be in the middle). In `src/motion/setup.ts`, set three directions in the tracker's own x, y, z:
 
-- **`TRACKER_DISTANCE`:** how far the object is from the tracker's base while a visitor uses it. The tracker panel shows the live `distance`, so hold the object where visitors will and copy that number.
-- **`SCREEN_WIDTH`:** the width of the screen's picture.
+- **`TOWARD_VISITOR`:** out of the screen toward the visitor.
+- **`UP`:** up.
+- **`VISITOR_RIGHT`:** to the right of a visitor facing the screen. If this is the wrong way round, calibration notices and follows the poses.
 
-These drive the movement:
+To check them, open the tracker panel (**T**) and move the object toward you, up, and to your right, watching which number in the `position` line grows. They're set for the exhibit now: +x toward the visitor, +y to the visitor's left (so right is −y), +z up.
 
-- **Pointing:** it works like a laser pointer. Turning the object by an angle from straight ahead moves the cursor `TRACKER_DISTANCE × tan(angle)` across a screen that is `SCREEN_WIDTH` wide. Farther from the screen, a smaller turn crosses it.
-- **Swipes:** a swipe must sweep 20° as seen from the tracker's base, which is `2 × TRACKER_DISTANCE × tan(10°)` sideways. That is about 12.7 inches at 36 inches away, so farther away, swipes must be longer.
+There are no distances to measure. Calibration finds how far away visitors stand, where the screen's corners are, and how the sensor sits inside the object, in whatever units the tracker uses.
+
+How the movement works:
+
+- **Pointing:** it works like a laser pointer. The cursor goes where a line out of the object meets the screen, using the object's full rotation, so it doesn't matter which way the sensor is mounted inside it.
+- **Swipes:** a swipe must sweep 20° as seen from the tracker's base: sideways by about a third of the distance visitors stand from the screen (about 12.7 inches at 3 feet).
 
 ## 3. Calibrate
 
@@ -114,7 +119,7 @@ Click **Calibrate** in the panel. Stand where visitors will. There are three ste
 
 If something goes wrong, the card says what and offers **Try again**. Press Esc to cancel at any time. To change the timings, edit `CALIBRATION_READY` and `CALIBRATION_HOLD` in `src/components/motion-control.web.tsx`.
 
-The centre sets where "straight ahead" is. The two sides set which way is left, right, up and down, whichever way up the tracker is mounted. How far the cursor and swipes move comes from `setup.ts`, so after changing the distance there is no need to recalibrate, only to reload the page.
+The corners are what the cursor is fitted to, so point carefully at each glowing circle: wherever you point during those steps becomes that corner. The centre step tells the book which way the object points.
 
 Recalibrate whenever the tracker, the screen or the spot visitors stand in moves. The calibration is saved in the browser.
 
@@ -122,7 +127,7 @@ Recalibrate whenever the tracker, the screen or the spot visitors stand in moves
 
 The thresholds are constants at the top of the source files:
 
-- **`src/motion/setup.ts`:** the distance and screen width above.
+- **`src/motion/setup.ts`:** the tracker's directions above.
 - **`src/motion/swipe-detector.ts`:**
   - how wide a swipe must sweep (`SWIPE_ANGLE`, in degrees as seen from the tracker's base)
   - how fast it must be (`SWIPE_TIME`)

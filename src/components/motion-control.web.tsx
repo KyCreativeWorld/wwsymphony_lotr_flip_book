@@ -12,7 +12,6 @@ import {
 } from '@/motion/calibration';
 import { clickableAt, sendClick, sendHover } from '@/motion/dwell-click';
 import { LIVE_MOTION_DEFAULT_URL } from '@/motion/live-motion';
-import { TRACKER_DISTANCE } from '@/motion/setup';
 import { SwipeDetector, type Gesture } from '@/motion/swipe-detector';
 import {
   connectSerial,
@@ -95,8 +94,10 @@ function loadSettings(): Settings {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const settings: Settings = saved ? { ...defaults, ...(JSON.parse(saved) as Partial<Settings>) } : defaults;
-    // Calibrations from before the centre pose was added don't work any more.
-    if (settings.calibration && !settings.calibration.centre) delete settings.calibration;
+    // Calibrations from before the centre pose was added, or from before pointing used the whole
+    // rotation (they saved angles instead), don't work any more.
+    const centre = settings.calibration?.centre as (Record<string, unknown> & { rotation?: unknown }) | undefined;
+    if (settings.calibration && (!centre || ('orientation' in centre && !centre.rotation))) delete settings.calibration;
     return settings;
   } catch {
     // Pre-rendering on the server, or storage is blocked.
@@ -299,6 +300,8 @@ export function MotionControl() {
       }
 
       const point = screenPoint(calibrated, sample, window.innerHeight / window.innerWidth);
+      // Pointing away from the screen: the cursor waits where it is.
+      if (!point) return;
       const targetX = clamp(point.x, 0, 1) * window.innerWidth;
       const targetY = clamp(point.y, 0, 1) * window.innerHeight;
       const c = cursor.current;
@@ -563,7 +566,15 @@ export function MotionControl() {
                 <br />
                 position {readout.sample.position.map(format).join(', ')}
                 <br />
-                distance {format(Math.hypot(...readout.sample.position))} (setup.ts: {TRACKER_DISTANCE})
+                distance {format(Math.hypot(...readout.sample.position))}
+                {readout.sample.objectCount !== undefined && (
+                  <>
+                    <br />
+                    {readout.sample.objectCount === 1
+                      ? 'tracking 1 object'
+                      : `tracking ${readout.sample.objectCount} objects: the book follows the first, so the cursor may jump`}
+                  </>
+                )}
                 {readout.sample.orientation && (
                   <>
                     <br />

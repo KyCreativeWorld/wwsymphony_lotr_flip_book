@@ -1,15 +1,22 @@
 import { liveMotionSample } from '@/motion/live-motion';
+import { eulerMatrix, type Matrix, type Vector } from '@/motion/rotation';
+
+export type { Vector };
 
 // One reading from the electromagnetic tracker: where the object is, and which way it points.
 // Units don't matter (inches, cm, whatever the tracker is set to), because calibration maps
 // everything onto the screen.
-export type Vector = [number, number, number];
-
 export type TrackerSample = {
   position: Vector;
-  // Azimuth (yaw), elevation (pitch) and roll in degrees. Missing if the tracker only reports
-  // position, in which case the cursor follows the object's position instead.
+  // Azimuth (yaw), elevation (pitch) and roll in degrees, for the tracker panel's readout.
+  // Missing if the tracker only reports position, in which case the cursor follows the object's
+  // position instead.
   orientation?: Vector;
+  // The same rotation as a matrix, which the pointing maths uses.
+  rotation?: Matrix;
+  // How many objects the tracker sent in this reading, when it says (LiveMotion does). The book
+  // follows the first, so more than one can make the cursor jump between them.
+  objectCount?: number;
   // When the sample arrived, in milliseconds (performance.now()).
   time: number;
 };
@@ -46,11 +53,8 @@ export function parseTrackerLine(line: string, time: number): TrackerSample | nu
       const orientation = [data.azimuth ?? data.yaw, data.elevation ?? data.pitch, data.roll ?? 0].map(
         toNumber,
       );
-      return {
-        position: position as Vector,
-        orientation: allFinite(orientation) ? (orientation as Vector) : undefined,
-        time,
-      };
+      const angles = allFinite(orientation) ? (orientation as Vector) : undefined;
+      return { position: position as Vector, orientation: angles, rotation: angles && eulerMatrix(angles), time };
     } catch {
       return null;
     }
@@ -60,7 +64,8 @@ export function parseTrackerLine(line: string, time: number): TrackerSample | nu
   if (fields.length >= 6) {
     const values = fields.slice(-6).map(Number);
     if (!allFinite(values)) return null;
-    return { position: values.slice(0, 3) as Vector, orientation: values.slice(3, 6) as Vector, time };
+    const angles = values.slice(3, 6) as Vector;
+    return { position: values.slice(0, 3) as Vector, orientation: angles, rotation: eulerMatrix(angles), time };
   }
   const position = fields.map(Number);
   if (position.length === 3 && allFinite(position)) return { position: position as Vector, time };
