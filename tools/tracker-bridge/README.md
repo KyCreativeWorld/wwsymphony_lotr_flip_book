@@ -16,7 +16,7 @@ Open the book in Chrome or Edge and press **T**, or click the small dot in the b
 
 There are three ways to connect.
 
-**The LiveMotion server.** If the class's LiveMotion motion server is tracking the object, click **Connect** next to "LiveMotion server" in the panel. The default address is `ws://localhost:8080`. No bridge is needed. The book follows the first tracked prop: its `pos` gives the position, and its rotation (a quaternion `{x, y, z, w}`, or `azimuth`/`elevation`/`roll` angles) gives where it points.
+**The LiveMotion server.** If the class's LiveMotion motion server is tracking the object, click **Connect** next to "LiveMotion server" in the panel. The default address is `ws://localhost:8080`. No bridge is needed. The book follows the first tracked prop: its `pos` gives the position, and its rotation gives where it points. The class's server sends the tracker's angles in degrees inside its `quat` field (`w` azimuth, `x` elevation, `y` roll), and the book reads them that way. A real quaternion `{x, y, z, w}`, or `azimuth`/`elevation`/`roll` angles, work too.
 
 To check the server on its own, open `motioncapture/motioncapture.html` in a browser. It shows the connection, the readings per second, and the latest prop exactly as the server sends it. If the panel shows a position but no `angles`, the server's rotation field has a name the book doesn't recognise yet. In that case, send a copy of what the test page shows.
 
@@ -92,22 +92,23 @@ x y z
 - **Position only:** if the tracker reports just `x y z`, the cursor follows where the object is instead of where it points.
 - **Other lines:** anything else, such as headers, is ignored.
 
-## 2. Tell the book which way the tracker faces
+## 2. Describe the setup
 
-The tracker's base sits at the screen (anywhere near it; it doesn't have to be in the middle). In `src/motion/setup.ts`, set three directions in the tracker's own x, y, z:
+The tracker's base sits between the screen and the visitor, square to the screen. Set two things in `src/motion/setup.ts`:
 
-- **`TOWARD_VISITOR`:** out of the screen toward the visitor.
-- **`UP`:** up.
-- **`VISITOR_RIGHT`:** to the right of a visitor facing the screen. If this is the wrong way round, calibration notices and follows the poses.
+- **`UP`:** which of the tracker's axes points up. To check it, open the tracker panel (**T**), raise the object, and watch which number in the `position` line grows. For the exhibit it's +z.
+- **`SCREEN_DISTANCE`:** how far the screen is from the base, in the tracker's units. The exhibit's LiveMotion server reports centimetres, and the screen is about 6½ feet (198 cm) from the base. It only needs to be roughly right: being off by 15 cm moves the cursor by a few pixels. To check the units, move the object 1 foot and see how much the `position` numbers change (about 30 means centimetres, 12 inches).
 
-To check them, open the tracker panel (**T**) and move the object toward you, up, and to your right, watching which number in the `position` line grows. They're set for the exhibit now: +x toward the visitor, +y to the visitor's left (so right is −y), +z up.
+Calibration works out the rest:
 
-There are no distances to measure. Calibration finds how far away visitors stand, where the screen's corners are, and how the sensor sits inside the object, in whatever units the tracker uses.
+- **Toward the visitor:** whichever axis the visitor stands along at the centre step. For the exhibit's LiveMotion server that's +y.
+- **The visitor's right:** the way the object moves from the left step to the right step.
+- **The screen:** where its corners are, and how the sensor sits inside the object.
 
 How the movement works:
 
 - **Pointing:** it works like a laser pointer. The cursor goes where a line out of the object meets the screen, using the object's full rotation, so it doesn't matter which way the sensor is mounted inside it.
-- **Swipes:** a swipe must sweep 20° as seen from the tracker's base: sideways by about a third of the distance visitors stand from the screen (about 12.7 inches at 3 feet).
+- **Swipes:** a swipe must sweep 20° as seen from the tracker's base: sideways by about a third of how far the object is from the base. For visitors 2½ feet away, that's about 10 inches.
 
 ## 3. Calibrate
 

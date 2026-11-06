@@ -29,18 +29,29 @@ function quaternionAngles({ x, y, z, w }: { x: number; y: number; z: number; w: 
 }
 
 // Which way a prop points, if it says: its angles for the readout, and its rotation for the
-// pointing maths. Servers name this differently, so a few common shapes are accepted: a
-// quaternion {x, y, z, w}, or angles {azimuth, elevation, roll} / {yaw, pitch, roll}.
+// pointing maths. Servers name and pack this differently, so several shapes are accepted:
+//
+// - A quaternion {x, y, z, w}.
+// - The class's LiveMotion server, which sends the tracker's angles in degrees inside its "quat"
+//   field: {"w": azimuth, "x": elevation, "y": roll, "z": 0}. A real quaternion's four numbers
+//   make a unit length, so anything far from that is read as angles instead.
+// - Angles {azimuth, elevation, roll} or {yaw, pitch, roll}.
+//
+// The server also sends "rot": {x, y, z}, all zeros, which says nothing and is skipped.
 function propOrientation(prop: Fields): { orientation: Vector; rotation: Matrix } | undefined {
-  for (const key of ['rot', 'rotation', 'quat', 'quaternion', 'ori', 'orientation']) {
+  for (const key of ['quat', 'quaternion', 'rotation', 'rot', 'ori', 'orientation']) {
     const value = prop[key];
     if (!isObject(value)) continue;
     if ('w' in value) {
       const [x, y, z, w] = [value.x, value.y, value.z, value.w].map(toNumber);
-      // Straight from the quaternion, without going through angles, which jump near ±180°.
-      if (allFinite([x, y, z, w])) {
+      if (!allFinite([x, y, z, w])) continue;
+      const size = Math.hypot(x, y, z, w);
+      if (size > 0.8 && size < 1.2) {
+        // Straight from the quaternion, without going through angles, which jump near ±180°.
         return { orientation: quaternionAngles({ x, y, z, w }), rotation: quaternionMatrix({ x, y, z, w }) };
       }
+      const angles: Vector = [w, x, y];
+      return { orientation: angles, rotation: eulerMatrix(angles) };
     }
     const angles = [value.azimuth ?? value.yaw, value.elevation ?? value.pitch, value.roll ?? 0].map(toNumber);
     if (allFinite(angles)) return { orientation: angles as Vector, rotation: eulerMatrix(angles as Vector) };

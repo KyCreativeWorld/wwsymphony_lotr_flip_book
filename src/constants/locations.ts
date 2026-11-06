@@ -34,7 +34,7 @@ export const LOCATIONS: BookPage[] = [
       'Bilbo’s 111th birthday, Frodo inherits Bag End and the Golden Ring, Gandalf tells Frodo he must leave the Shire.',
     characters: ['frodo', 'samwise', 'merry', 'pippin', 'gandalf'],
     score: 'Concerning Hobbits',
-    photo: { image: require('@/assets/images/locations/Bennington.jpg'), isPhoto: true },
+    photo: { image: require('@/assets/images/locations/Bennington.png'), isPhoto: true },
     mapMarker: { label: 'Bennington', ...spot(429, 349) },
   },
   {
@@ -46,7 +46,7 @@ export const LOCATIONS: BookPage[] = [
       'Gandalf is betrayed and imprisoned by Saruman.',
     characters: ['saruman', 'gandalf'],
     score: 'A Knife in the Dark',
-    photo: { image: require('@/assets/images/locations/isengard.png') },
+    photo: { image: require('@/assets/images/locations/Isengard Hotel.png'), isPhoto: true },
     mapMarker: { label: 'Isengard Hotel and Conference Center', ...spot(840, 683) },
   },
   {
@@ -57,7 +57,7 @@ export const LOCATIONS: BookPage[] = [
       'The hobbits meet Aragorn and are hunted by Nazgul.',
     characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn'],
     score: 'Not featured',
-    photo: { image: require('@/assets/images/locations/prancingtaco.png') },
+    photo: { image: require('@/assets/images/locations/The Prancing Taco.png'), isPhoto: true },
     mapMarker: { label: 'The Prancing Taco', ...spot(635, 236) },
   },
   {
@@ -69,7 +69,7 @@ export const LOCATIONS: BookPage[] = [
       'The hobbits camp on Weathertop and are attacked by the Nazgul, Frodo is stabbed by a Morgul-knife.',
     characters: ['frodo', 'samwise', 'merry', 'pippin', 'aragorn'],
     score: 'A Knife in the Dark',
-    photo: { image: require('@/assets/images/locations/wallulatop.png') },
+    photo: { image: require('@/assets/images/locations/Wallula Gap.png'), isPhoto: true },
     mapMarker: { label: 'Wallula Top', ...spot(730, 351) },
   },
   {
@@ -93,7 +93,7 @@ export const LOCATIONS: BookPage[] = [
       'The fellowship is trapped in a snow storm, and chooses to travel through the Mines of Moria.',
     characters: FELLOWSHIP,
     score: 'The Fellowship Theme',
-    photo: { image: require('@/assets/images/locations/Blue Mountains.jpg'), isPhoto: true },
+    photo: { image: require('@/assets/images/locations/Blue Mountains.png'), isPhoto: true },
     mapMarker: { label: 'Blue Mountains', ...spot(875, 408) },
   },
   {
@@ -105,7 +105,7 @@ export const LOCATIONS: BookPage[] = [
       'Gandalf defends the fellowship from the Balrog on the Bridge of Khazad-dûm before falling into the abyss.',
     characters: [...FELLOWSHIP, 'gollum'],
     score: 'The Fellowship Theme',
-    photo: { image: require('@/assets/images/locations/Mines of Cordiner.jpg'), isPhoto: true },
+    photo: { image: require('@/assets/images/locations/Mines of Cordiner.png'), isPhoto: true },
     mapMarker: { label: 'Mines of Cordiner', ...spot(875, 530) },
   },
   {
@@ -117,7 +117,7 @@ export const LOCATIONS: BookPage[] = [
       'After escaping the Mines of Moria, the Fellowship receive magical gifts from Lord Celeborn and Lady Galadriel.',
     characters: FELLOWSHIP.filter((id) => id !== 'gandalf'),
     score: 'The Fellowship Theme',
-    photo: { image: require('@/assets/images/locations/Lothlorineer.jpg'), isPhoto: true },
+    photo: { image: require('@/assets/images/locations/Lothlorineer.png'), isPhoto: true },
     mapMarker: { label: 'Lothlorineer', ...spot(950, 482) },
   },
   {
@@ -129,7 +129,7 @@ export const LOCATIONS: BookPage[] = [
       'Driven by the Ring’s influence, Boromir tries to take the Ring from Frodo.',
     characters: [...FELLOWSHIP.filter((id) => id !== 'gandalf'), 'gollum'],
     score: 'Argonath',
-    photo: { image: require('@/assets/images/locations/Anduin Creek.jpg'), isPhoto: true },
+    photo: { image: require('@/assets/images/locations/Anduin Creek.png'), isPhoto: true },
     mapMarker: { label: 'Anduin Creek', ...spot(1056, 614) },
   },
   {
