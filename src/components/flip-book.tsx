@@ -391,9 +391,16 @@ export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fi
     }),
   );
 
-  // The covers, the sheet being turned, and the two sheets on each side of the open spread.
+  // The covers, the sheet being turned, and the two sheets on each side of the open spread. A
+  // single-page book never shows its left half, so there it's just the open page, the one under
+  // it, the one turning, and the back cover framing them.
   const isDrawn = (index: number) =>
-    index === 0 || index === leaves.length - 1 || index === turning || (index >= current - 2 && index <= current + 1);
+    single
+      ? index === current || index === current + 1 || index === turning || index === leaves.length - 1
+      : index === 0 ||
+        index === leaves.length - 1 ||
+        index === turning ||
+        (index >= current - 2 && index <= current + 1);
 
   const getZIndex = (index: number) => {
     if (index === turning) return leaves.length + 1;
@@ -453,7 +460,7 @@ export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fi
             leaf={leaf}
             turned={index < current}
             duration={turnDuration}
-            curl={leaf.kind === 'page' && index === turning}
+            curl={!single && leaf.kind === 'page' && index === turning}
             zIndex={getZIndex(index)}
             left={coverWidth}
             top={leaf.kind === 'cover' ? 0 : COVER_MARGIN_Y}
@@ -473,6 +480,7 @@ export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fi
           coverHeight={coverHeight}
           pageWidth={pageWidth}
           pageHeight={pageHeight}
+          flat={single}
         />
       )}
 
@@ -482,7 +490,7 @@ export function FlipBook({ pages, map, pageWidth, single = false, pageHeight: fi
 
   if (!single) return book;
   // Shown through a window the size of one cover, over the book's right half. A turning page
-  // curls away past the window's left edge.
+  // swings away past the window's left edge.
   return (
     <View style={[styles.singleWindow, { width: coverWidth, height: coverHeight }]}>
       {book}
@@ -511,21 +519,6 @@ function TurningLeaf({ leaf, turned, duration, curl, zIndex, left, top, width, h
     angle.value = withTiming(turned ? -180 : 0, { duration, easing: TURN_EASING });
   }, [turned, duration, angle]);
 
-  // Rotate around the spine (the leaf's left edge), with perspective so it lifts toward the reader.
-  const leafStyle = useAnimatedStyle(() => ({
-    transform: [{ perspective: width * 5 }, { rotateY: `${angle.value}deg` }],
-  }));
-  // Show the front until the leaf stands upright, then the back.
-  const frontStyle = useAnimatedStyle(() => ({ opacity: angle.value > -90 ? 1 : 0 }));
-  const backStyle = useAnimatedStyle(() => ({ opacity: angle.value > -90 ? 0 : 1 }));
-  // Darken each face as it tilts away from the light.
-  const frontShade = useAnimatedStyle(() => ({
-    opacity: interpolate(angle.value, [0, -90], [0, 0.35], 'clamp'),
-  }));
-  const backShade = useAnimatedStyle(() => ({
-    opacity: interpolate(angle.value, [-90, -180], [0.35, 0], 'clamp'),
-  }));
-
   const faceStyle = leaf.kind === 'cover' ? styles.coverFace : styles.pageFace;
 
   const frontContent = <LeafSide leaf={leaf} side="front" />;
@@ -549,19 +542,61 @@ function TurningLeaf({ leaf, turned, duration, curl, zIndex, left, top, width, h
   }
 
   return (
-    <Animated.View style={[styles.leaf, { left, top, width, height, zIndex }, leafStyle]}>
+    <FlatSheet
+      angle={angle}
+      turned={turned}
+      zIndex={zIndex}
+      left={left}
+      top={top}
+      width={width}
+      height={height}
+      faceStyle={faceStyle}
+      front={frontContent}
+      back={backContent}
+    />
+  );
+}
+
+type FlatSheetProps = Omit<CurlingSheetProps, 'forward'> & {
+  // Whether the sheet is (or is turning to be) on the left. Only the side facing up takes
+  // clicks; null means neither does.
+  turned: boolean | null;
+};
+
+// A sheet turning flat about the spine, like a stiff board: the covers, and on an upright phone
+// the pages too. (A page curl there would need graphics layers too big for a phone's memory.)
+function FlatSheet({ angle, turned, zIndex, left, top, width, height, faceStyle, front, back }: FlatSheetProps) {
+  // Rotate around the spine (the leaf's left edge), with perspective so it lifts toward the reader.
+  const leafStyle = useAnimatedStyle(() => ({
+    transform: [{ perspective: width * 5 }, { rotateY: `${angle.value}deg` }],
+  }));
+  // Show the front until the leaf stands upright, then the back.
+  const frontStyle = useAnimatedStyle(() => ({ opacity: angle.value > -90 ? 1 : 0 }));
+  const backStyle = useAnimatedStyle(() => ({ opacity: angle.value > -90 ? 0 : 1 }));
+  // Darken each face as it tilts away from the light.
+  const frontShade = useAnimatedStyle(() => ({
+    opacity: interpolate(angle.value, [0, -90], [0, 0.35], 'clamp'),
+  }));
+  const backShade = useAnimatedStyle(() => ({
+    opacity: interpolate(angle.value, [-90, -180], [0.35, 0], 'clamp'),
+  }));
+
+  return (
+    <Animated.View
+      style={[styles.leaf, { left, top, width, height, zIndex }, leafStyle]}
+      pointerEvents={turned === null ? 'none' : 'box-none'}>
       {/* Only the side facing up takes clicks, so hidden map markers can't be pressed. */}
       <Animated.View
         style={[styles.face, faceStyle, frontStyle]}
-        pointerEvents={turned ? 'none' : 'auto'}>
-        {frontContent}
+        pointerEvents={turned === false ? 'auto' : 'none'}>
+        {front}
         <Animated.View style={[styles.shade, frontShade]} pointerEvents="none" />
       </Animated.View>
       {/* Mirrored so it reads correctly once the leaf has flipped over to the left. */}
       <Animated.View
         style={[styles.face, faceStyle, styles.mirrored, backStyle]}
-        pointerEvents={turned ? 'auto' : 'none'}>
-        {backContent}
+        pointerEvents={turned === true ? 'auto' : 'none'}>
+        {back}
         <Animated.View style={[styles.shade, backShade]} pointerEvents="none" />
       </Animated.View>
     </Animated.View>
@@ -626,12 +661,14 @@ type JumpFlipProps = {
   coverHeight: number;
   pageWidth: number;
   pageHeight: number;
+  // Turn the sheets flat rather than curling them (see FlatSheet).
+  flat: boolean;
 };
 
 // Turning from spread `from` straight to `to`, drawn over the book (whose real leaves are already
 // at `to`). One page turns showing where you're leaving on the way up and where you're arriving
 // on the way down, with blank pages fanning out beneath it for the pages skipped over.
-function JumpFlip({ leaves, from, to, coverWidth, coverHeight, pageWidth, pageHeight }: JumpFlipProps) {
+function JumpFlip({ leaves, from, to, coverWidth, coverHeight, pageWidth, pageHeight, flat }: JumpFlipProps) {
   const forward = to > from;
   const blanks = Math.min(Math.abs(to - from) - 1, JUMP_MAX_BLANKS);
 
@@ -646,7 +683,7 @@ function JumpFlip({ leaves, from, to, coverWidth, coverHeight, pageWidth, pageHe
   const stayingIsCover = staying.kind === 'cover';
   const stayingWidth = stayingIsCover ? coverWidth : pageWidth;
 
-  const sheet = { left: coverWidth, top: COVER_MARGIN_Y, width: pageWidth, height: pageHeight };
+  const sheet = { left: coverWidth, top: COVER_MARGIN_Y, width: pageWidth, height: pageHeight, flat };
   const blankPage: Leaf = {
     kind: 'page',
     front: null,
@@ -712,12 +749,13 @@ type JumpSheetProps = {
   top: number;
   width: number;
   height: number;
+  flat: boolean;
   front: ReactNode;
   back: ReactNode;
 };
 
 // One page of a jump, turning once on its own timing.
-function JumpSheet({ forward, delay, duration, front, back, ...placement }: JumpSheetProps) {
+function JumpSheet({ forward, delay, duration, flat, front, back, ...placement }: JumpSheetProps) {
   const angle = useSharedValue(forward ? 0 : -180);
   useEffect(() => {
     angle.value = withDelay(
@@ -726,6 +764,9 @@ function JumpSheet({ forward, delay, duration, front, back, ...placement }: Jump
     );
   }, [angle, delay, duration, forward]);
 
+  if (flat) {
+    return <FlatSheet angle={angle} turned={null} faceStyle={styles.pageFace} front={front} back={back} {...placement} />;
+  }
   return (
     <CurlingSheet
       angle={angle}
